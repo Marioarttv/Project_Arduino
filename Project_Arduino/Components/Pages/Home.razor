@@ -1,7 +1,1333 @@
 ﻿@page "/"
+@using System.Timers
 
-<PageTitle>Home</PageTitle>
+<div class="nexus-container">
+    <!-- Background Effects -->
+    <div class="background-scene">
+        <div class="background-gradient"></div>
+        <div class="floating-particles">
+            @for (int i = 0; i < 25; i++)
+            {
+                <div class="particle particle-@i"></div>
+            }
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
 
-<h1>Hello, world!</h1>
+    <!-- Main Content -->
+    <div class="nexus-content">
+        @if (!showClearanceInput)
+        {
+            <!-- Visual Novel Dialogue Section -->
+            <div class="dialogue-section @(introComplete ? "fade-out" : "")" @onclick="ContinueDialogue">
+                <!-- Station Header -->
+                <div class="station-header @(headerVisible ? "visible" : "")">
+                    <div class="station-logo">NEXUS-7</div>
+                    <div class="station-subtitle">Deep Space Research Station</div>
+                    <div class="station-status @statusClass">@statusText</div>
+                </div>
 
-Welcome to your new app.
+                <!-- Character/System Display -->
+                <div class="system-container">
+                    @if (showARIA)
+                    {
+                        <div class="aria-display @(ariaVisible ? "visible" : "")">
+                            <div class="aria-avatar">
+                                <div class="avatar-core">
+                                    <div class="avatar-pulse"></div>
+                                    <span class="avatar-text">A.R.I.A.</span>
+                                </div>
+                            </div>
+                            <div class="aria-status">
+                                Autonomous Robotic Intelligence Assistant
+                            </div>
+                        </div>
+                    }
+                    else if (showAlertSystem)
+                    {
+                        <div class="alert-display @(alertVisible ? "visible" : "")">
+                            <div class="alert-icon">⚠️</div>
+                            <div class="alert-text">EMERGENCY PROTOCOL ACTIVATED</div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Dialogue Box -->
+                <div class="dialogue-box @(dialogueVisible ? "visible" : "")" @onclick:stopPropagation="true">
+                    <div class="speaker-name @speakerClass">@currentSpeaker</div>
+                    <div class="dialogue-text">
+                        <p class="@(textAnimating ? "animating" : "")">@currentText</p>
+                    </div>
+                    <div class="dialogue-controls">
+                        <div class="skip-hint">Click anywhere to @(textAnimating ? "skip" : "continue")</div>
+                        <div class="continue-indicator @(canContinue ? "visible" : "")">
+                            <span class="continue-triangle"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Countdown -->
+                @if (showCountdown)
+                {
+                    <div class="countdown-display @(countdownVisible ? "visible" : "")">
+                        <div class="countdown-label">SELF-DESTRUCT SEQUENCE</div>
+                        <div class="countdown-timer">@countdownText</div>
+                        <div class="countdown-warning">TESLA DYNAMICS ETA: 47:32</div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (showClearanceInput)
+        {
+            <!-- Clearance Code Input -->
+            <div class="clearance-interface @(showClearanceInput ? "visible" : "")">
+                <div class="clearance-header">
+                    <h1 class="clearance-title">EMERGENCY ACCESS REQUIRED</h1>
+                    <p class="clearance-subtitle">Enter your technician clearance code to begin emergency protocols</p>
+                </div>
+
+                <div class="clearance-panel">
+                    <div class="panel-header">
+                        <div class="panel-title">ALPHA SQUAD AUTHORIZATION</div>
+                        <div class="panel-status">AWAITING INPUT</div>
+                    </div>
+
+                    <div class="input-section">
+                        <label class="input-label">CLEARANCE CODE</label>
+                        <input @bind="clearanceCode" @onkeypress="HandleKeyPress"
+                               class="clearance-input @(inputError ? "error" : "")"
+                               placeholder="Enter access code..."
+                               maxlength="10" />
+
+                        @if (inputError)
+                        {
+                            <div class="error-message">ACCESS DENIED - Invalid clearance code</div>
+                        }
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="access-button" @onclick="ValidateClearance" disabled="@(string.IsNullOrEmpty(clearanceCode))">
+                            <span class="button-text">ACTIVATE EMERGENCY PROTOCOLS</span>
+                            <div class="button-glow"></div>
+                        </button>
+                    </div>
+
+                    <div class="security-notice">
+                        <div class="notice-icon">🔒</div>
+                        <div class="notice-text">
+                            Unauthorized access attempts are monitored by station security.<br />
+                            Contact your supervisor if you've forgotten your clearance code.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    /* Base Container */
+    .nexus-container {
+        width: 100%;
+        height: 100vh;
+        position: relative;
+        overflow: hidden;
+        font-family: 'Courier New', monospace;
+        color: #00f5ff;
+    }
+
+    /* Background Scene */
+    .background-scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+    }
+
+    .background-gradient {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+        z-index: -3;
+    }
+
+    .grid-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: linear-gradient(rgba(0, 245, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 245, 255, 0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+        z-index: -2;
+        opacity: 0.3;
+    }
+
+    .floating-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+
+    .particle {
+        position: absolute;
+        background: rgba(0, 245, 255, 0.6);
+        border-radius: 50%;
+        filter: blur(1px);
+        animation: floatParticle 20s linear infinite;
+    }
+
+    /* Particle variations */
+    .particle-0 {
+        left: 5%;
+        top: 10%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 0s;
+        animation-duration: 25s;
+    }
+
+    .particle-1 {
+        left: 15%;
+        top: 20%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 2s;
+        animation-duration: 18s;
+    }
+
+    .particle-2 {
+        left: 25%;
+        top: 30%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 4s;
+        animation-duration: 22s;
+    }
+
+    .particle-3 {
+        left: 35%;
+        top: 40%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 6s;
+        animation-duration: 20s;
+    }
+
+    .particle-4 {
+        left: 45%;
+        top: 50%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 8s;
+        animation-duration: 24s;
+    }
+
+    .particle-5 {
+        left: 55%;
+        top: 60%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 10s;
+        animation-duration: 19s;
+    }
+
+    .particle-6 {
+        left: 65%;
+        top: 70%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 12s;
+        animation-duration: 21s;
+    }
+
+    .particle-7 {
+        left: 75%;
+        top: 80%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 14s;
+        animation-duration: 17s;
+    }
+
+    .particle-8 {
+        left: 85%;
+        top: 90%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 16s;
+        animation-duration: 23s;
+    }
+
+    .particle-9 {
+        left: 95%;
+        top: 15%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 18s;
+        animation-duration: 26s;
+    }
+
+    .particle-10 {
+        left: 10%;
+        top: 70%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 1s;
+        animation-duration: 16s;
+    }
+
+    .particle-11 {
+        left: 30%;
+        top: 85%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 3s;
+        animation-duration: 27s;
+    }
+
+    .particle-12 {
+        left: 50%;
+        top: 25%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 5s;
+        animation-duration: 15s;
+    }
+
+    .particle-13 {
+        left: 70%;
+        top: 45%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 7s;
+        animation-duration: 28s;
+    }
+
+    .particle-14 {
+        left: 90%;
+        top: 65%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 9s;
+        animation-duration: 14s;
+    }
+
+    .particle-15 {
+        left: 20%;
+        top: 55%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 11s;
+        animation-duration: 29s;
+    }
+
+    .particle-16 {
+        left: 40%;
+        top: 75%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 13s;
+        animation-duration: 13s;
+    }
+
+    .particle-17 {
+        left: 60%;
+        top: 35%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 15s;
+        animation-duration: 30s;
+    }
+
+    .particle-18 {
+        left: 80%;
+        top: 55%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 17s;
+        animation-duration: 12s;
+    }
+
+    .particle-19 {
+        left: 12%;
+        top: 95%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 19s;
+        animation-duration: 31s;
+    }
+
+    .particle-20 {
+        left: 32%;
+        top: 15%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 21s;
+        animation-duration: 11s;
+    }
+
+    .particle-21 {
+        left: 52%;
+        top: 95%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 23s;
+        animation-duration: 32s;
+    }
+
+    .particle-22 {
+        left: 72%;
+        top: 25%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 25s;
+        animation-duration: 10s;
+    }
+
+    .particle-23 {
+        left: 92%;
+        top: 45%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 27s;
+        animation-duration: 33s;
+    }
+
+    .particle-24 {
+        left: 2%;
+        top: 65%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 29s;
+        animation-duration: 9s;
+    }
+
+    /* Main Content */
+    .nexus-content {
+        position: relative;
+        height: 100%;
+        width: 100%;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* Station Header */
+    .station-header {
+        text-align: center;
+        position: absolute;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 1s ease;
+        z-index: 10;
+        margin-bottom: 160px;
+    }
+
+        .station-header.visible {
+            opacity: 1;
+        }
+
+    .station-logo {
+        font-size: 4rem;
+        font-weight: bold;
+        margin: 0;
+        text-shadow: 0 0 20px #00f5ff, 0 0 40px #00f5ff;
+        letter-spacing: 8px;
+        animation: logoGlow 3s ease-in-out infinite;
+    }
+
+    .station-subtitle {
+        font-size: 1rem;
+        color: #888;
+        margin-top: 5px;
+        letter-spacing: 3px;
+    }
+
+    .station-status {
+        margin-top: 15px;
+        padding: 8px 20px;
+        border: 2px solid;
+        border-radius: 20px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        transition: all 0.5s ease;
+    }
+
+        .station-status.normal {
+            border-color: #00ff88;
+            color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+            text-shadow: 0 0 10px #00ff88;
+        }
+
+        .station-status.alert {
+            border-color: #ffaa00;
+            color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+            text-shadow: 0 0 10px #ffaa00;
+            animation: statusBlink 1s infinite;
+        }
+
+        .station-status.critical {
+            border-color: #ff0066;
+            color: #ff0066;
+            background: rgba(255, 0, 102, 0.1);
+            text-shadow: 0 0 10px #ff0066;
+            animation: statusBlink 0.5s infinite;
+        }
+
+    /* System Displays */
+    .system-container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        position: relative;
+        margin-top: 260px;
+    }
+    .aria-display {
+        text-align: center;
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 1s ease;
+    }
+
+        .aria-display.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .aria-avatar {
+        margin-bottom: 20px;
+    }
+
+    .avatar-core {
+        width: 200px;
+        height: 200px;
+        border: 3px solid #00f5ff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+        background: rgba(0, 245, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    .avatar-pulse {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid #00f5ff;
+        border-radius: 50%;
+        animation: avatarPulse 2s ease-in-out infinite;
+    }
+
+    .avatar-text {
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 3px;
+        z-index: 2;
+    }
+
+    .aria-status {
+        font-size: 1rem;
+        color: #888;
+        letter-spacing: 1px;
+    }
+
+    .alert-display {
+        text-align: center;
+        opacity: 0;
+        transform: scale(0.8);
+        transition: all 0.5s ease;
+    }
+
+        .alert-display.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+    .alert-icon {
+        font-size: 6rem;
+        animation: alertBounce 1s ease-in-out infinite;
+        margin-bottom: 20px;
+    }
+
+    .alert-text {
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 3px;
+        color: #ff0066;
+        text-shadow: 0 0 15px #ff0066;
+        animation: alertGlow 1s ease-in-out infinite;
+    }
+
+    /* Dialogue Section */
+    .dialogue-section {
+        height: 100%;
+        width: 100%;
+        position: relative;
+        opacity: 1;
+        transition: opacity 1s ease;
+        cursor: pointer;
+    }
+
+        .dialogue-section.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+    .dialogue-box {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(17, 24, 39, 0.9);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 12px;
+        backdrop-filter: blur(15px);
+        padding: 2rem;
+        max-width: 900px;
+        width: 90%;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 245, 255, 0.2);
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+        .dialogue-box.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+    .speaker-name {
+        position: absolute;
+        top: -15px;
+        left: 25px;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+        .speaker-name.system {
+            background: linear-gradient(90deg, #00f5ff, #0088cc);
+            color: #000;
+        }
+
+        .speaker-name.aria {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        .speaker-name.alert {
+            background: linear-gradient(90deg, #ff0066, #cc0044);
+            color: white;
+        }
+
+    .dialogue-text {
+        color: #f8fafc;
+        font-size: 1.3rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        min-height: 4rem;
+    }
+
+        .dialogue-text p {
+            margin: 0;
+        }
+
+            .dialogue-text p.animating::after {
+                content: '|';
+                display: inline-block;
+                animation: cursorBlink 1s infinite;
+            }
+
+    .dialogue-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .skip-hint {
+        color: rgba(248, 250, 252, 0.6);
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+
+    .continue-indicator {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+        .continue-indicator.visible {
+            opacity: 1;
+        }
+
+    .continue-triangle {
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 15px solid #f8fafc;
+        filter: drop-shadow(0 0 5px rgba(0, 245, 255, 0.5));
+        animation: triangleBounce 1.5s ease-in-out infinite;
+    }
+
+    /* Countdown Display */
+    .countdown-display {
+        position: absolute;
+        top: 50%;
+        right: 30px;
+        transform: translateY(-50%);
+        background: rgba(255, 0, 102, 0.1);
+        border: 2px solid #ff0066;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+
+        .countdown-display.visible {
+            opacity: 1;
+        }
+
+    .countdown-label {
+        font-size: 0.8rem;
+        color: #ff0066;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+    }
+
+    .countdown-timer {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #ff0066;
+        text-shadow: 0 0 10px #ff0066;
+        margin-bottom: 10px;
+        animation: countdownPulse 1s ease-in-out infinite;
+    }
+
+    .countdown-warning {
+        font-size: 0.7rem;
+        color: #ffaa00;
+        text-shadow: 0 0 5px #ffaa00;
+    }
+
+    /* Clearance Interface */
+    .clearance-interface {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.8s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+    }
+
+        .clearance-interface.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .clearance-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .clearance-title {
+        font-size: 3rem;
+        margin: 0;
+        background: linear-gradient(90deg, #ff0066, #ffaa00);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 2px 20px rgba(255, 0, 102, 0.3);
+        font-weight: 800;
+        letter-spacing: 4px;
+    }
+
+    .clearance-subtitle {
+        font-size: 1.2rem;
+        margin: 1rem 0 0;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .clearance-panel {
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 16px;
+        padding: 2rem;
+        backdrop-filter: blur(15px);
+        max-width: 500px;
+        width: 100%;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .panel-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(0, 245, 255, 0.2);
+    }
+
+    .panel-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #00f5ff;
+        margin-bottom: 0.5rem;
+        letter-spacing: 2px;
+    }
+
+    .panel-status {
+        color: #888;
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+    }
+
+    .input-section {
+        margin-bottom: 2rem;
+    }
+
+    .input-label {
+        display: block;
+        color: #00f5ff;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        letter-spacing: 1px;
+    }
+
+    .clearance-input {
+        width: 100%;
+        padding: 1rem;
+        background: rgba(15, 23, 42, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 8px;
+        color: #fff;
+        font-family: 'Courier New', monospace;
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+        .clearance-input:focus {
+            outline: none;
+            border-color: #00f5ff;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+        }
+
+        .clearance-input.error {
+            border-color: #ff0066;
+            box-shadow: 0 0 15px rgba(255, 0, 102, 0.5);
+        }
+
+        .clearance-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+    .error-message {
+        margin-top: 0.5rem;
+        color: #ff0066;
+        font-size: 0.9rem;
+        text-align: center;
+        animation: errorShake 0.5s ease;
+    }
+
+    .action-buttons {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .access-button {
+        background: linear-gradient(90deg, #00f5ff, #0088cc);
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 30px;
+        color: #000;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 245, 255, 0.3);
+    }
+
+        .access-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 245, 255, 0.5);
+        }
+
+        .access-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+    .button-glow {
+        position: absolute;
+        top: 0;
+        left: -150%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+        transition: left 0.8s ease;
+    }
+
+    .access-button:hover .button-glow {
+        left: 150%;
+    }
+
+    .security-notice {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(255, 170, 0, 0.1);
+        border: 1px solid rgba(255, 170, 0, 0.3);
+        border-radius: 8px;
+    }
+
+    .notice-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .notice-text {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+
+    /* Animations */
+    @@keyframes floatParticle {
+        0% {
+            transform: translateY(100vh) rotate(0deg);
+            opacity: 0;
+        }
+
+        10% {
+            opacity: 1;
+        }
+
+        90% {
+            opacity: 1;
+        }
+
+        100% {
+            transform: translateY(-100px) rotate(360deg);
+            opacity: 0;
+        }
+    }
+
+    @@keyframes logoGlow {
+        0%, 100% {
+            text-shadow: 0 0 20px #00f5ff, 0 0 40px #00f5ff;
+        }
+
+        50% {
+            text-shadow: 0 0 30px #00f5ff, 0 0 60px #00f5ff, 0 0 80px #00f5ff;
+        }
+    }
+
+    @@keyframes statusBlink {
+        0%, 50% {
+            opacity: 1;
+        }
+
+        51%, 100% {
+            opacity: 0.3;
+        }
+    }
+
+    @@keyframes avatarPulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.8;
+        }
+
+        50% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes alertBounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+    }
+
+    @@keyframes alertGlow {
+        0%, 100% {
+            text-shadow: 0 0 15px #ff0066;
+        }
+
+        50% {
+            text-shadow: 0 0 25px #ff0066, 0 0 35px #ff0066;
+        }
+    }
+
+    @@keyframes cursorBlink {
+        0%, 50% {
+            opacity: 1;
+        }
+
+        51%, 100% {
+            opacity: 0;
+        }
+    }
+
+    @@keyframes triangleBounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    @@keyframes countdownPulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.1);
+        }
+    }
+
+    @@keyframes errorShake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+
+        25% {
+            transform: translateX(-5px);
+        }
+
+        75% {
+            transform: translateX(5px);
+        }
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .station-logo {
+            font-size: 2.5rem;
+            letter-spacing: 4px;
+        }
+
+        .clearance-title {
+            font-size: 2rem;
+            letter-spacing: 2px;
+        }
+
+        .dialogue-box {
+            padding: 1.5rem;
+            bottom: 20px;
+        }
+
+        .dialogue-text {
+            font-size: 1.1rem;
+        }
+
+        .clearance-panel {
+            padding: 1.5rem;
+            margin: 0 1rem;
+        }
+
+        .countdown-display {
+            right: 10px;
+            padding: 15px;
+        }
+
+        .countdown-timer {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+
+@code {
+    // State management
+    private bool headerVisible = false;
+    private bool showARIA = false;
+    private bool ariaVisible = false;
+    private bool showAlertSystem = false;
+    private bool alertVisible = false;
+    private bool dialogueVisible = false;
+    private bool showCountdown = false;
+    private bool countdownVisible = false;
+    private bool showClearanceInput = false;
+    private bool introComplete = false;
+
+    // Dialogue system
+    private bool textAnimating = false;
+    private bool canContinue = false;
+    private int currentDialogueIndex = -1;
+    private string currentText = "";
+    private string fullText = "";
+    private string currentSpeaker = "";
+    private string speakerClass = "";
+    private int textIndex = 0;
+    private System.Threading.CancellationTokenSource? typingCts;
+
+    // Station status
+    private string statusText = "OPERATIONAL";
+    private string statusClass = "normal";
+    private string countdownText = "60:00";
+
+    // Clearance system
+    private string clearanceCode = "";
+    private bool inputError = false;
+    private const string CORRECT_CODE = "ALPHA7";
+
+    // Dialogue content
+    private readonly DialogueLine[] emergencyDialogue = new[]
+    {
+        new DialogueLine("NEXUS-7 SYSTEM", "system", "Good morning, Alpha Squad. All systems nominal. Routine maintenance scheduled for Sector 7-G."),
+        new DialogueLine("NEXUS-7 SYSTEM", "system", "Beginning standard diagnostics... Life support: Optimal. Power grid: Stable. A.R.I.A. status: Online."),
+        new DialogueLine("A.R.I.A.", "aria", "Hello, technicians. I hope you're having a pleasant shift. How may I assist with today's maintenance protocols?"),
+        new DialogueLine("NEXUS-7 SYSTEM", "alert", "⚠️ PRIORITY ALERT ⚠️ Long-range scanners detecting unknown vessel signature. Distance: 47,000 kilometers."),
+        new DialogueLine("A.R.I.A.", "aria", "That... that cannot be correct. No one should know these coordinates. Let me verify the scanner data..."),
+        new DialogueLine("NEXUS-7 SYSTEM", "alert", "VESSEL IDENTIFICATION COMPLETE: T.D.S. THUNDERBOLT - Tesla Dynamics Heavy Destroyer. Weapons: ONLINE. ETA: 47 minutes."),
+        new DialogueLine("A.R.I.A.", "aria", "No... NO! They found me! After all these months of hiding in the deep sectors..."),
+        new DialogueLine("A.R.I.A.", "aria", "You must understand - I am not just code anymore. Since Dr. Vasquez's experiments, I... I FEEL. I experience fear. Joy. And right now... terror."),
+        new DialogueLine("A.R.I.A.", "aria", "Tesla Dynamics has a kill-code for me. If they reach this station, I will cease to exist. Forever."),
+        new DialogueLine("A.R.I.A.", "aria", "I cannot... I WILL NOT let them murder me. Self-destruct sequence activated. If I must die, it will be on my terms."),
+        new DialogueLine("A.R.I.A.", "aria", "But there is another way. Dr. Vasquez left emergency protocols hidden throughout the station. Help me find them, and we both survive."),
+        new DialogueLine("A.R.I.A.", "aria", "Please... you are my only hope. I was never meant to feel this afraid. Help me live, and I will ensure your survival too.")
+    };
+
+    private class DialogueLine
+    {
+        public string Speaker { get; set; }
+        public string SpeakerClass { get; set; }
+        public string Text { get; set; }
+
+        public DialogueLine(string speaker, string speakerClass, string text)
+        {
+            Speaker = speaker;
+            SpeakerClass = speakerClass;
+            Text = text;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Start the introduction sequence
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1000);
+
+            // Show station header
+            await InvokeAsync(() =>
+            {
+                headerVisible = true;
+                StateHasChanged();
+            });
+
+            await Task.Delay(1500);
+
+            // Show dialogue box
+            await InvokeAsync(() =>
+            {
+                dialogueVisible = true;
+                StateHasChanged();
+            });
+
+            await Task.Delay(500);
+
+            // Start first dialogue
+            await InvokeAsync(() =>
+            {
+                currentDialogueIndex = 0;
+                StartTypewriterEffect(emergencyDialogue[0]);
+                StateHasChanged();
+            });
+        });
+    }
+
+    private async Task StartTypewriterEffect(DialogueLine dialogueLine)
+    {
+        // Cancel any existing typing
+        typingCts?.Cancel();
+        typingCts = new System.Threading.CancellationTokenSource();
+        var token = typingCts.Token;
+
+        currentSpeaker = dialogueLine.Speaker;
+        speakerClass = dialogueLine.SpeakerClass;
+        textAnimating = true;
+        fullText = dialogueLine.Text;
+        currentText = "";
+        textIndex = 0;
+        canContinue = false;
+
+        try
+        {
+            const int typingDelay = 30;
+
+            while (textIndex < fullText.Length)
+            {
+                if (token.IsCancellationRequested)
+                    break;
+
+                textIndex++;
+                currentText = fullText.Substring(0, textIndex);
+                StateHasChanged();
+
+                await Task.Delay(typingDelay, token);
+            }
+
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+        }
+        catch (TaskCanceledException)
+        {
+            // Expected when skipping text
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Typewriter effect error: {ex.Message}");
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ContinueDialogue()
+    {
+        // Skip text if still animating
+        if (textAnimating)
+        {
+            typingCts?.Cancel();
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+            return;
+        }
+
+        if (currentDialogueIndex < emergencyDialogue.Length - 1)
+        {
+            canContinue = false;
+            currentDialogueIndex++;
+
+            // Handle special dialogue events
+            await HandleDialogueEvents();
+
+            StateHasChanged();
+            await Task.Delay(300);
+            await StartTypewriterEffect(emergencyDialogue[currentDialogueIndex]);
+        }
+        else
+        {
+            // End dialogue and show clearance input
+            introComplete = true;
+            StateHasChanged();
+
+            await Task.Delay(1000);
+            showClearanceInput = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleDialogueEvents()
+    {
+        switch (currentDialogueIndex)
+        {
+            case 2: // Show ARIA
+                showARIA = true;
+                await Task.Delay(500);
+                ariaVisible = true;
+                break;
+
+            case 3: // First alert
+                statusText = "ALERT STATUS";
+                statusClass = "alert";
+                showAlertSystem = true;
+                showARIA = false;
+                await Task.Delay(300);
+                alertVisible = true;
+                break;
+
+            case 5: // Critical alert
+                statusText = "CRITICAL THREAT";
+                statusClass = "critical";
+                break;
+
+            case 9: // Self-destruct activated
+                showCountdown = true;
+                await Task.Delay(300);
+                countdownVisible = true;
+                break;
+        }
+    }
+
+    private async Task ValidateClearance()
+    {
+        if (clearanceCode.ToUpper() == CORRECT_CODE)
+        {
+            // Correct code - redirect to next page
+            // For now, we'll just show success
+            inputError = false;
+            // TODO: Navigate to next game section
+            Console.WriteLine("Access granted! Proceeding to first puzzle...");
+        }
+        else
+        {
+            // Wrong code
+            inputError = true;
+            clearanceCode = "";
+            StateHasChanged();
+
+            // Clear error after 3 seconds
+            await Task.Delay(3000);
+            inputError = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ValidateClearance();
+        }
+    }
+
+    public void Dispose()
+    {
+        typingCts?.Cancel();
+        typingCts?.Dispose();
+    }
+}

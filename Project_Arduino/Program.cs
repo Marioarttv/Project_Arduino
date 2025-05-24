@@ -1,10 +1,14 @@
 using Project_Arduino.Components;
+using Project_Arduino.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+// Register the Sound Service
+builder.Services.AddScoped<ISoundService, SoundService>();
 
 var app = builder.Build();
 
@@ -17,7 +21,6 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
 
 app.UseAntiforgery();
 

@@ -1,5 +1,7 @@
-@page "/"
+@page "/simonsays"
 @using System.Timers
+@inject ISoundService SoundService
+@implements IAsyncDisposable
 
 <div class="game-container">
     <div class="game-header">
@@ -27,32 +29,32 @@
 
     <div class="game-board">
         <div class="color-grid">
-            <button class="color-button red @(activeColor == "red" ? "active" : "")" 
-                    @onclick="() => HandleColorClick(0)" 
+            <button class="color-button red @(activeColor == "red" ? "active" : "")"
+                    @onclick="() => HandleColorClick(0)"
                     disabled="@(gameState != GameState.PlayerTurn)">
                 <div class="button-inner">
                     <div class="button-core"></div>
                 </div>
             </button>
-            
-            <button class="color-button yellow @(activeColor == "yellow" ? "active" : "")" 
-                    @onclick="() => HandleColorClick(1)" 
+
+            <button class="color-button yellow @(activeColor == "yellow" ? "active" : "")"
+                    @onclick="() => HandleColorClick(1)"
                     disabled="@(gameState != GameState.PlayerTurn)">
                 <div class="button-inner">
                     <div class="button-core"></div>
                 </div>
             </button>
-            
-            <button class="color-button green @(activeColor == "green" ? "active" : "")" 
-                    @onclick="() => HandleColorClick(2)" 
+
+            <button class="color-button green @(activeColor == "green" ? "active" : "")"
+                    @onclick="() => HandleColorClick(2)"
                     disabled="@(gameState != GameState.PlayerTurn)">
                 <div class="button-inner">
                     <div class="button-core"></div>
                 </div>
             </button>
-            
-            <button class="color-button blue @(activeColor == "blue" ? "active" : "")" 
-                    @onclick="() => HandleColorClick(3)" 
+
+            <button class="color-button blue @(activeColor == "blue" ? "active" : "")"
+                    @onclick="() => HandleColorClick(3)"
                     disabled="@(gameState != GameState.PlayerTurn)">
                 <div class="button-inner">
                     <div class="button-core"></div>
@@ -74,6 +76,13 @@
                 <span class="button-text">RESET SYSTEM</span>
             </button>
         }
+
+        <!-- Sound Controls -->
+        <div class="sound-controls">
+            <button class="control-button sound" @onclick="ToggleBackgroundMusic">
+                <span class="button-text">@(backgroundMusicPlaying ? "STOP MUSIC" : "PLAY MUSIC")</span>
+            </button>
+        </div>
     </div>
 
     @if (gameState == GameState.Success)
@@ -112,18 +121,16 @@
         overflow: hidden;
     }
 
-    .game-container::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: 
-            radial-gradient(circle at 20% 80%, rgba(0, 245, 255, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(255, 0, 150, 0.1) 0%, transparent 50%);
-        pointer-events: none;
-    }
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 20% 80%, rgba(0, 245, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 0, 150, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
 
     .game-header {
         text-align: center;
@@ -162,10 +169,25 @@
         letter-spacing: 2px;
     }
 
-    .status-text.ready { color: #00ff88; text-shadow: 0 0 10px #00ff88; }
-    .status-text.input { color: #00f5ff; text-shadow: 0 0 10px #00f5ff; }
-    .status-text.success { color: #00ff00; text-shadow: 0 0 15px #00ff00; }
-    .status-text.error { color: #ff0066; text-shadow: 0 0 15px #ff0066; }
+        .status-text.ready {
+            color: #00ff88;
+            text-shadow: 0 0 10px #00ff88;
+        }
+
+        .status-text.input {
+            color: #00f5ff;
+            text-shadow: 0 0 10px #00f5ff;
+        }
+
+        .status-text.success {
+            color: #00ff00;
+            text-shadow: 0 0 15px #00ff00;
+        }
+
+        .status-text.error {
+            color: #ff0066;
+            text-shadow: 0 0 15px #ff0066;
+        }
 
     .game-board {
         z-index: 2;
@@ -194,14 +216,14 @@
         outline: none;
     }
 
-    .color-button:hover:not(:disabled) {
-        transform: scale(1.05);
-    }
+        .color-button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
 
-    .color-button:disabled {
-        cursor: not-allowed;
-        opacity: 0.6;
-    }
+        .color-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
 
     .button-inner {
         width: 100%;
@@ -262,6 +284,10 @@
     .control-panel {
         margin-top: 40px;
         z-index: 2;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
     }
 
     .control-button {
@@ -279,19 +305,35 @@
         box-shadow: 0 5px 15px rgba(0, 245, 255, 0.3);
     }
 
-    .control-button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 245, 255, 0.5);
-    }
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 245, 255, 0.5);
+        }
 
-    .control-button.reset {
-        background: linear-gradient(135deg, #ff0066, #cc0044);
-        color: white;
-        box-shadow: 0 5px 15px rgba(255, 0, 102, 0.3);
-    }
+        .control-button.reset {
+            background: linear-gradient(135deg, #ff0066, #cc0044);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 0, 102, 0.3);
+        }
 
-    .control-button.reset:hover {
-        box-shadow: 0 8px 25px rgba(255, 0, 102, 0.5);
+            .control-button.reset:hover {
+                box-shadow: 0 8px 25px rgba(255, 0, 102, 0.5);
+            }
+
+        .control-button.sound {
+            background: linear-gradient(135deg, #9966ff, #6644cc);
+            color: white;
+            box-shadow: 0 5px 15px rgba(153, 102, 255, 0.3);
+            font-size: 0.9rem;
+            padding: 10px 30px;
+        }
+
+            .control-button.sound:hover {
+                box-shadow: 0 8px 25px rgba(153, 102, 255, 0.5);
+            }
+
+    .sound-controls {
+        margin-top: 10px;
     }
 
     .success-overlay {
@@ -340,41 +382,84 @@
     }
 
     @@keyframes titlePulse {
-        0%, 100% { text-shadow: 0 0 20px #00f5ff, 0 0 40px #00f5ff; }
-        50% { text-shadow: 0 0 30px #00f5ff, 0 0 60px #00f5ff, 0 0 80px #00f5ff; }
+        0%, 100%
+
+    {
+        text-shadow: 0 0 20px #00f5ff, 0 0 40px #00f5ff;
+    }
+
+    50% {
+        text-shadow: 0 0 30px #00f5ff, 0 0 60px #00f5ff, 0 0 80px #00f5ff;
+    }
+
     }
 
     @@keyframes buttonFlash {
-        0% { transform: scale(1.1); opacity: 1; }
-        50% { transform: scale(1.2); opacity: 0.8; }
-        100% { transform: scale(1.1); opacity: 1; }
+        0%
+
+    {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
     }
 
     @@keyframes successPulse {
-        0%, 100% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.2); opacity: 0.8; }
+        0%, 100%
+
+    {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+
     }
 
     @@keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from
+
+    {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+
     }
 
     @@media (max-width: 768px) {
-        .game-title {
-            font-size: 2.5rem;
-            letter-spacing: 4px;
-        }
-        
-        .color-button {
-            width: 120px;
-            height: 120px;
-        }
-        
-        .color-grid {
-            gap: 15px;
-            padding: 20px;
-        }
+        .game-title
+
+    {
+        font-size: 2.5rem;
+        letter-spacing: 4px;
+    }
+
+    .color-button {
+        width: 120px;
+        height: 120px;
+    }
+
+    .color-grid {
+        gap: 15px;
+        padding: 20px;
+    }
+
     }
 </style>
 
@@ -393,12 +478,63 @@
     private int currentPlayerIndex = 0;
     private string activeColor = "";
     private System.Timers.Timer resetTimer = new System.Timers.Timer();
+    private bool backgroundMusicPlaying = false;
 
     private string[] colorNames = { "red", "yellow", "green", "blue" };
+
+    // Sound file names - these should match your actual sound files in wwwroot/sounds/
+    private string[] buttonSounds = { "button-red.wav", "button-yellow.wav", "button-green.wav", "button-blue.wav" };
+    private string backgroundMusicFile = "LOOP_Recollection.wav";
+    private string successSoundFile = "success.wav";
+    private string failureSoundFile = "error.wav";
+    private string startSoundFile = "startup.wav";
 
     protected override void OnInitialized()
     {
         resetTimer.Elapsed += OnResetTimerElapsed;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Start background music when component is first loaded
+            await StartBackgroundMusic();
+        }
+    }
+
+    private async Task StartBackgroundMusic()
+    {
+        try
+        {
+            await SoundService.PlayBackgroundMusic(backgroundMusicFile, loop: true, volume: 0.3f);
+            backgroundMusicPlaying = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleBackgroundMusic()
+    {
+        try
+        {
+            if (backgroundMusicPlaying)
+            {
+                await SoundService.StopBackgroundMusic();
+                backgroundMusicPlaying = false;
+            }
+            else
+            {
+                await StartBackgroundMusic();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to toggle background music: {ex.Message}");
+        }
     }
 
     private async void StartGame()
@@ -406,6 +542,17 @@
         gameState = GameState.PlayerTurn;
         playerSequence.Clear();
         currentPlayerIndex = 0;
+
+        // Play startup sound
+        try
+        {
+            await SoundService.PlaySFX(startSoundFile, loop: false, volume: 0.8f);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to play start sound: {ex.Message}");
+        }
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -413,10 +560,20 @@
     {
         if (gameState != GameState.PlayerTurn) return;
 
+        // Play button sound
+        try
+        {
+            await SoundService.PlaySFX(buttonSounds[colorIndex], loop: false, volume: 0.6f);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to play button sound: {ex.Message}");
+        }
+
         // Flash the clicked button
         activeColor = colorNames[colorIndex];
         await InvokeAsync(StateHasChanged);
-        
+
         await Task.Delay(200);
         activeColor = "";
         await InvokeAsync(StateHasChanged);
@@ -425,11 +582,22 @@
         if (colorIndex == sequence[currentPlayerIndex])
         {
             currentPlayerIndex++;
-            
+
             if (currentPlayerIndex >= sequence.Count)
             {
                 // Success!
                 gameState = GameState.Success;
+
+                // Play success sound
+                try
+                {
+                    await SoundService.PlaySFX(successSoundFile, loop: false, volume: 1.0f);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to play success sound: {ex.Message}");
+                }
+
                 await InvokeAsync(StateHasChanged);
             }
         }
@@ -437,8 +605,19 @@
         {
             // Failure
             gameState = GameState.Failure;
+
+            // Play failure sound
+            try
+            {
+                await SoundService.PlaySFX(failureSoundFile, loop: false, volume: 0.8f);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to play failure sound: {ex.Message}");
+            }
+
             await InvokeAsync(StateHasChanged);
-            
+
             // Auto-reset after 3 seconds
             resetTimer.Interval = 3000;
             resetTimer.Start();
@@ -461,8 +640,18 @@
         ResetGame();
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         resetTimer?.Dispose();
+
+        // Clean up sound service
+        try
+        {
+            await SoundService.StopAllSounds();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to stop sounds during disposal: {ex.Message}");
+        }
     }
 }
