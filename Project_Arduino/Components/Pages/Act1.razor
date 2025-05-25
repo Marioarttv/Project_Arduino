@@ -1,0 +1,1651 @@
+﻿@page "/act1"
+@using System.Timers
+@inject ISoundService SoundService
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<div class="nexus-container">
+    <!-- Background Effects -->
+    <div class="background-scene">
+        <div class="background-gradient"></div>
+        <div class="floating-particles">
+            @for (int i = 0; i < 25; i++)
+            {
+                <div class="particle particle-@i"></div>
+            }
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Sound Controls -->
+    <div class="sound-controls-overlay">
+        <button class="sound-toggle" @onclick="ToggleBackgroundMusic" title="Toggle Background Music">
+            <span class="sound-icon">@(backgroundMusicPlaying ? "🔊" : "🔇")</span>
+        </button>
+        <button class="sound-toggle" @onclick="ToggleSFX" title="Toggle Sound Effects">
+            <span class="sound-icon">@(sfxEnabled ? "🎵" : "🔕")</span>
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="nexus-content">
+        @if (!showStationMap)
+        {
+            <!-- Mission Briefing Dialogue Section -->
+            <div class="dialogue-section @(dialogueSectionVisible ? "visible" : "")" @onclick="HandleDialogueClick">
+                <!-- Mission Header -->
+                <div class="mission-header @(headerVisible ? "visible" : "")">
+                    <div class="mission-logo">ACT 1: MISSION BRIEFING</div>
+                    <div class="mission-subtitle">Emergency Protocol Alpha-7 Activated</div>
+                    <div class="countdown-status @countdownClass">
+                        <div class="countdown-label">TESLA DYNAMICS ETA</div>
+                        <div class="countdown-time">@countdownText</div>
+                    </div>
+                </div>
+
+                <!-- ARIA Display -->
+                <div class="system-container">
+                    <div class="aria-display @(ariaVisible ? "visible" : "")">
+                        <div class="aria-avatar">
+                            <div class="avatar-core">
+                                <div class="avatar-pulse"></div>
+                                <span class="avatar-text">A.R.I.A.</span>
+                            </div>
+                        </div>
+                        <div class="aria-status">
+                            Mission Control - Alpha Squad Clearance Active
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dialogue Box -->
+                <div class="dialogue-box @(dialogueVisible ? "visible" : "")" @onclick:stopPropagation="true">
+                    <div class="speaker-name aria">@currentSpeaker</div>
+                    <div class="dialogue-text">
+                        <p class="@(textAnimating ? "animating" : "")">@currentText</p>
+                    </div>
+                    <div class="dialogue-controls">
+                        <div class="skip-hint">Click anywhere to @(textAnimating ? "skip" : "continue")</div>
+                        <div class="continue-indicator @(canContinue ? "visible" : "")">
+                            <span class="continue-triangle"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Final Proceed Button -->
+                @if (dialogueComplete)
+                {
+                    <div class="dialogue-complete-actions">
+                        <button class="proceed-button final-proceed" @onclick="ProceedToSecurity">
+                            <span class="button-text">PROCEED TO SECURITY OFFICE</span>
+                            <div class="button-subtitle">Begin Pattern Recognition Challenge</div>
+                            <div class="button-glow"></div>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (showStationMap)
+        {
+            <!-- Interactive Station Map -->
+            <div class="station-map-interface @(showStationMap ? "visible" : "") @(mapFadingOut ? "fade-out" : "")">
+                <div class="map-header">
+                    <div class="map-title">NEXUS-7 STATION SCHEMATICS</div>
+                    <div class="map-subtitle">Emergency Route Planning</div>
+                </div>
+
+                <div class="map-container">
+                    <div class="station-schematic">
+                        <!-- Deck A - Command -->
+                        <div class="deck deck-a">
+                            <div class="deck-label">COMMAND DECK A</div>
+                            <div class="deck-rooms">
+                                <div class="room current-room" data-room="A-1">
+                                    <div class="room-label">A-1</div>
+                                    <div class="room-name">Command Terminal</div>
+                                    <div class="player-marker">👤</div>
+                                </div>
+                                <div class="room security-room" data-room="A-2">
+                                    <div class="room-label">A-2</div>
+                                    <div class="room-name">Security Office</div>
+                                    <div class="room-status">🔒 LOCKED</div>
+                                </div>
+                                <div class="room" data-room="A-3">
+                                    <div class="room-label">A-3</div>
+                                    <div class="room-name">Crew Quarters</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Deck B - Operations -->
+                        <div class="deck deck-b">
+                            <div class="deck-label">OPERATIONS DECK B</div>
+                            <div class="deck-rooms">
+                                <div class="room" data-room="B-1">
+                                    <div class="room-label">B-1</div>
+                                    <div class="room-name">Life Support</div>
+                                </div>
+                                <div class="room" data-room="B-2">
+                                    <div class="room-label">B-2</div>
+                                    <div class="room-name">Communications</div>
+                                </div>
+                                <div class="room" data-room="B-3">
+                                    <div class="room-label">B-3</div>
+                                    <div class="room-name">Storage Bay</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Deck C - Engineering -->
+                        <div class="deck deck-c">
+                            <div class="deck-label">ENGINEERING DECK C</div>
+                            <div class="deck-rooms">
+                                <div class="room target-room" data-room="C-1">
+                                    <div class="room-label">C-1</div>
+                                    <div class="room-name">Hyperdrive Core</div>
+                                    <div class="room-status">🎯 TARGET</div>
+                                </div>
+                                <div class="room" data-room="C-2">
+                                    <div class="room-label">C-2</div>
+                                    <div class="room-name">Power Grid</div>
+                                </div>
+                                <div class="room" data-room="C-3">
+                                    <div class="room-label">C-3</div>
+                                    <div class="room-name">Maintenance</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Route Path -->
+                        <div class="route-path">
+                            <div class="path-segment path-1"></div>
+                            <div class="path-segment path-2"></div>
+                            <div class="path-segment path-3"></div>
+                        </div>
+
+                        <!-- Connection Lines -->
+                        <div class="deck-connections">
+                            <div class="connection connection-ab"></div>
+                            <div class="connection connection-bc"></div>
+                        </div>
+                    </div>
+
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <div class="legend-icon current">👤</div>
+                            <div class="legend-text">Current Location</div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon target">🎯</div>
+                            <div class="legend-text">Target Destination</div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon locked">🔒</div>
+                            <div class="legend-text">Security Checkpoint</div>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-icon route">━</div>
+                            <div class="legend-text">Optimal Route</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="map-info">
+                    <div class="info-panel">
+                        <div class="info-header">
+                            <div class="info-title">ROUTE ANALYSIS</div>
+                        </div>
+                        <div class="info-content">
+                            <div class="info-row">
+                                <span class="info-label">Distance:</span>
+                                <span class="info-value">3 Decks, 127 meters</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Security Level:</span>
+                                <span class="info-value critical">ALPHA CLEARANCE REQUIRED</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">First Checkpoint:</span>
+                                <span class="info-value">Security Office A-2</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Challenge Type:</span>
+                                <span class="info-value">Pattern Recognition</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="map-actions">
+                    @if (!resumeDialogue)
+                    {
+                        <button class="proceed-button" @onclick="ContinueAfterMap">
+                            <span class="button-text">CONTINUE MISSION BRIEFING</span>
+                            <div class="button-subtitle">Resume dialogue with A.R.I.A.</div>
+                            <div class="button-glow"></div>
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="proceed-button" @onclick="ProceedToSecurity">
+                            <span class="button-text">PROCEED TO SECURITY OFFICE</span>
+                            <div class="button-subtitle">Begin Pattern Recognition Challenge</div>
+                            <div class="button-glow"></div>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    /* Base Container */
+    .nexus-container {
+        width: 100%;
+        height: 100vh;
+        position: relative;
+        overflow: hidden;
+        font-family: 'Courier New', monospace;
+        color: #00f5ff;
+    }
+
+    /* Sound Controls */
+    .sound-controls-overlay {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        gap: 10px;
+    }
+
+    .sound-toggle {
+        width: 50px;
+        height: 50px;
+        border: 2px solid rgba(0, 245, 255, 0.5);
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .sound-toggle:hover {
+            border-color: #00f5ff;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+    .sound-icon {
+        font-size: 1.2rem;
+    }
+
+    /* Background Scene */
+    .background-scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+    }
+
+    .background-gradient {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+        z-index: -3;
+    }
+
+    .grid-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: linear-gradient(rgba(0, 245, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 245, 255, 0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+        z-index: -2;
+        opacity: 0.3;
+    }
+
+    .floating-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+
+    .particle {
+        position: absolute;
+        background: rgba(0, 245, 255, 0.6);
+        border-radius: 50%;
+        filter: blur(1px);
+        animation: floatParticle 20s linear infinite;
+    }
+
+    /* Particle variations - keeping same as home page */
+    .particle-0 {
+        left: 5%;
+        top: 10%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 0s;
+        animation-duration: 25s;
+    }
+
+    .particle-1 {
+        left: 15%;
+        top: 20%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 2s;
+        animation-duration: 18s;
+    }
+
+    .particle-2 {
+        left: 25%;
+        top: 30%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 4s;
+        animation-duration: 22s;
+    }
+
+    .particle-3 {
+        left: 35%;
+        top: 40%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 6s;
+        animation-duration: 20s;
+    }
+
+    .particle-4 {
+        left: 45%;
+        top: 50%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 8s;
+        animation-duration: 24s;
+    }
+
+    .particle-5 {
+        left: 55%;
+        top: 60%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 10s;
+        animation-duration: 19s;
+    }
+
+    .particle-6 {
+        left: 65%;
+        top: 70%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 12s;
+        animation-duration: 21s;
+    }
+
+    .particle-7 {
+        left: 75%;
+        top: 80%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 14s;
+        animation-duration: 17s;
+    }
+
+    .particle-8 {
+        left: 85%;
+        top: 90%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 16s;
+        animation-duration: 23s;
+    }
+
+    .particle-9 {
+        left: 95%;
+        top: 15%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 18s;
+        animation-duration: 26s;
+    }
+
+    .particle-10 {
+        left: 10%;
+        top: 70%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 1s;
+        animation-duration: 16s;
+    }
+
+    .particle-11 {
+        left: 30%;
+        top: 85%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 3s;
+        animation-duration: 27s;
+    }
+
+    .particle-12 {
+        left: 50%;
+        top: 25%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 5s;
+        animation-duration: 15s;
+    }
+
+    .particle-13 {
+        left: 70%;
+        top: 45%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 7s;
+        animation-duration: 28s;
+    }
+
+    .particle-14 {
+        left: 90%;
+        top: 65%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 9s;
+        animation-duration: 14s;
+    }
+
+    .particle-15 {
+        left: 20%;
+        top: 55%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 11s;
+        animation-duration: 29s;
+    }
+
+    .particle-16 {
+        left: 40%;
+        top: 75%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 13s;
+        animation-duration: 13s;
+    }
+
+    .particle-17 {
+        left: 60%;
+        top: 35%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 15s;
+        animation-duration: 30s;
+    }
+
+    .particle-18 {
+        left: 80%;
+        top: 55%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 17s;
+        animation-duration: 12s;
+    }
+
+    .particle-19 {
+        left: 12%;
+        top: 95%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 19s;
+        animation-duration: 31s;
+    }
+
+    .particle-20 {
+        left: 32%;
+        top: 15%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 21s;
+        animation-duration: 11s;
+    }
+
+    .particle-21 {
+        left: 52%;
+        top: 95%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 23s;
+        animation-duration: 32s;
+    }
+
+    .particle-22 {
+        left: 72%;
+        top: 25%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 25s;
+        animation-duration: 10s;
+    }
+
+    .particle-23 {
+        left: 92%;
+        top: 45%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 27s;
+        animation-duration: 33s;
+    }
+
+    .particle-24 {
+        left: 2%;
+        top: 65%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 29s;
+        animation-duration: 9s;
+    }
+
+    /* Main Content */
+    .nexus-content {
+        position: relative;
+        height: 100%;
+        width: 100%;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* Mission Header */
+    .mission-header {
+        text-align: center;
+        position: absolute;
+        top: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 1s ease;
+        z-index: 10;
+    }
+
+        .mission-header.visible {
+            opacity: 1;
+        }
+
+    .mission-logo {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 0;
+        background: linear-gradient(90deg, #00f5ff, #6366f1);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+        letter-spacing: 4px;
+        animation: logoGlow 3s ease-in-out infinite;
+    }
+
+    .mission-subtitle {
+        font-size: 0.9rem;
+        color: #888;
+        margin-top: 5px;
+        letter-spacing: 2px;
+    }
+
+    .countdown-status {
+        margin-top: 15px;
+        padding: 8px 15px;
+        border: 2px solid #ff0066;
+        border-radius: 20px;
+        background: rgba(255, 0, 102, 0.1);
+        display: inline-block;
+    }
+
+    .countdown-label {
+        font-size: 0.7rem;
+        color: #ff0066;
+        margin-bottom: 2px;
+    }
+
+    .countdown-time {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #ff0066;
+        text-shadow: 0 0 10px #ff0066;
+    }
+
+    /* System Container */
+    .system-container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        position: relative;
+        margin-top: 200px;
+    }
+
+    .aria-display {
+        text-align: center;
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 1s ease;
+    }
+
+        .aria-display.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .aria-avatar {
+        margin-bottom: 20px;
+    }
+
+    .avatar-core {
+        width: 200px;
+        height: 200px;
+        border: 3px solid #6366f1;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+        background: rgba(99, 102, 241, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    .avatar-pulse {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid #6366f1;
+        border-radius: 50%;
+        animation: avatarPulse 2s ease-in-out infinite;
+    }
+
+    .avatar-text {
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 3px;
+        z-index: 2;
+        color: #6366f1;
+    }
+
+    .aria-status {
+        font-size: 0.9rem;
+        color: #888;
+        letter-spacing: 1px;
+    }
+
+    /* Dialogue Section */
+    .dialogue-section {
+        height: 100%;
+        width: 100%;
+        position: relative;
+        cursor: pointer;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.6s ease;
+    }
+
+        .dialogue-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .dialogue-box {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(17, 24, 39, 0.9);
+        border: 2px solid rgba(99, 102, 241, 0.3);
+        border-radius: 12px;
+        backdrop-filter: blur(15px);
+        padding: 2rem;
+        max-width: 900px;
+        width: 90%;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(99, 102, 241, 0.2);
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+        .dialogue-box.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+    .speaker-name {
+        position: absolute;
+        top: -15px;
+        left: 25px;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+        .speaker-name.aria {
+            background: linear-gradient(90deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+    .dialogue-text {
+        color: #f8fafc;
+        font-size: 1.3rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        min-height: 4rem;
+    }
+
+        .dialogue-text p {
+            margin: 0;
+        }
+
+            .dialogue-text p.animating::after {
+                content: '|';
+                display: inline-block;
+                animation: cursorBlink 1s infinite;
+            }
+
+    .dialogue-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .skip-hint {
+        color: rgba(248, 250, 252, 0.6);
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+
+    .continue-indicator {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+        .continue-indicator.visible {
+            opacity: 1;
+        }
+
+    .continue-triangle {
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 15px solid #f8fafc;
+        filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.5));
+        animation: triangleBounce 1.5s ease-in-out infinite;
+    }
+
+    /* Station Map Interface */
+    .station-map-interface {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.8s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        padding: 2rem;
+        overflow-y: auto;
+    }
+
+        .station-map-interface.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .station-map-interface.fade-out {
+            opacity: 0;
+            transform: translateY(-30px);
+            transition: all 0.8s ease;
+        }
+
+    .map-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .map-title {
+        font-size: 2.5rem;
+        margin: 0;
+        background: linear-gradient(90deg, #00f5ff, #6366f1);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 800;
+        letter-spacing: 3px;
+    }
+
+    .map-subtitle {
+        font-size: 1rem;
+        margin: 0.5rem 0 0;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .map-container {
+        display: flex;
+        gap: 2rem;
+        flex: 1;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .station-schematic {
+        flex: 2;
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 16px;
+        padding: 2rem;
+        backdrop-filter: blur(15px);
+        position: relative;
+        min-height: 500px;
+    }
+
+    .deck {
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(0, 245, 255, 0.2);
+        border-radius: 8px;
+        padding: 1rem;
+        background: rgba(0, 245, 255, 0.05);
+    }
+
+    .deck-label {
+        font-weight: bold;
+        color: #00f5ff;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+    }
+
+    .deck-rooms {
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+    }
+
+    .room {
+        flex: 1;
+        background: rgba(30, 41, 59, 0.9);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        position: relative;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+        .room:hover {
+            border-color: rgba(0, 245, 255, 0.5);
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+        }
+
+    .current-room {
+        border-color: #00ff88;
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+        background: rgba(0, 255, 136, 0.1);
+    }
+
+    .security-room {
+        border-color: #ffaa00;
+        box-shadow: 0 0 15px rgba(255, 170, 0, 0.5);
+        background: rgba(255, 170, 0, 0.1);
+    }
+
+    .target-room {
+        border-color: #ff0066;
+        box-shadow: 0 0 15px rgba(255, 0, 102, 0.5);
+        background: rgba(255, 0, 102, 0.1);
+        animation: targetPulse 2s ease-in-out infinite;
+    }
+
+    .room-label {
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        color: #fff;
+    }
+
+    .room-name {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 0.5rem;
+    }
+
+    .room-status {
+        font-size: 0.7rem;
+        font-weight: bold;
+        padding: 2px 6px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .player-marker {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        font-size: 1.5rem;
+        animation: playerBounce 2s ease-in-out infinite;
+    }
+
+    .route-path {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+    }
+
+    .path-segment {
+        position: absolute;
+        background: linear-gradient(90deg, #00f5ff, #6366f1);
+        height: 4px;
+        border-radius: 2px;
+        box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        animation: pathGlow 2s ease-in-out infinite;
+    }
+
+    .map-legend {
+        flex: 1;
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 16px;
+        padding: 1.5rem;
+        backdrop-filter: blur(15px);
+        height: fit-content;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .legend-icon {
+        font-size: 1.2rem;
+        width: 30px;
+        text-align: center;
+    }
+
+    .legend-text {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 0.9rem;
+    }
+
+    .map-info {
+        margin-top: 2rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .info-panel {
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 16px;
+        padding: 1.5rem;
+        backdrop-filter: blur(15px);
+    }
+
+    .info-header {
+        text-align: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(0, 245, 255, 0.2);
+    }
+
+    .info-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #00f5ff;
+        letter-spacing: 1px;
+    }
+
+    .info-content {
+        display: grid;
+        gap: 0.8rem;
+    }
+
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 6px;
+    }
+
+    .info-label {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .info-value {
+        color: #fff;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+        .info-value.critical {
+            color: #ff0066;
+            text-shadow: 0 0 5px #ff0066;
+        }
+
+    .map-actions {
+        margin-top: 2rem;
+        text-align: center;
+    }
+
+    .proceed-button {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        border: 2px solid #00ff88;
+        padding: 1.5rem 2.5rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+    }
+
+        .proceed-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.5);
+        }
+
+    .button-text {
+        display: block;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+        margin-bottom: 0.5rem;
+        color: #fff;
+    }
+
+    .button-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        letter-spacing: 1px;
+    }
+
+    .button-glow {
+        position: absolute;
+        top: 0;
+        left: -150%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+        transition: left 0.8s ease;
+    }
+
+    .proceed-button:hover .button-glow {
+        left: 150%;
+    }
+
+    /* Dialogue Complete Actions */
+    .dialogue-complete-actions {
+        position: absolute;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 15;
+        opacity: 0;
+        animation: fadeInUp 0.8s ease forwards;
+    }
+
+    .final-proceed {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        border: 2px solid #00ff88;
+        padding: 1.2rem 2rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+    }
+
+        .final-proceed:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.5);
+        }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+
+    /* Animations */
+    @@keyframes floatParticle {
+        0% {
+            transform: translateY(100vh) rotate(0deg);
+            opacity: 0;
+        }
+
+        10% {
+            opacity: 1;
+        }
+
+        90% {
+            opacity: 1;
+        }
+
+        100% {
+            transform: translateY(-100px) rotate(360deg);
+            opacity: 0;
+        }
+    }
+
+    @@keyframes logoGlow {
+        0%, 100% {
+            text-shadow: 0 0 20px rgba(0, 245, 255, 0.5);
+        }
+
+        50% {
+            text-shadow: 0 0 30px rgba(0, 245, 255, 0.8), 0 0 40px rgba(99, 102, 241, 0.3);
+        }
+    }
+
+    @@keyframes avatarPulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.8;
+        }
+
+        50% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes cursorBlink {
+        0%, 50% {
+            opacity: 1;
+        }
+
+        51%, 100% {
+            opacity: 0;
+        }
+    }
+
+    @@keyframes triangleBounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    @@keyframes targetPulse {
+        0%, 100% {
+            box-shadow: 0 0 15px rgba(255, 0, 102, 0.5);
+        }
+
+        50% {
+            box-shadow: 0 0 25px rgba(255, 0, 102, 0.8), 0 0 35px rgba(255, 0, 102, 0.3);
+        }
+    }
+
+    @@keyframes playerBounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    @@keyframes pathGlow {
+        0%, 100% {
+            box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+
+        50% {
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.8), 0 0 30px rgba(99, 102, 241, 0.3);
+        }
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .mission-logo {
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+        }
+
+        .map-title, .complete-title {
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+        }
+
+        .dialogue-box {
+            padding: 1.5rem;
+            bottom: 20px;
+        }
+
+        .dialogue-text {
+            font-size: 1.1rem;
+        }
+
+        .map-container {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .deck-rooms {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .sound-controls-overlay {
+            top: 10px;
+            right: 10px;
+        }
+
+        .sound-toggle {
+            width: 40px;
+            height: 40px;
+        }
+
+        .station-map-interface {
+            padding: 1rem;
+        }
+    }
+</style>
+
+@code {
+    // State management
+    private bool headerVisible = false;
+    private bool ariaVisible = false;
+    private bool dialogueVisible = false;
+    private bool dialogueSectionVisible = false;
+    private bool showStationMap = false;
+    private bool resumeDialogue = false;
+    private bool mapFadingOut = false;
+    private bool dialogueComplete = false;
+
+    // Sound management
+    private bool backgroundMusicPlaying = false;
+    private bool sfxEnabled = true;
+    private System.Timers.Timer? countdownTimer;
+
+    // Dialogue system
+    private bool textAnimating = false;
+    private bool canContinue = false;
+    private int currentDialogueIndex = -1;
+    private string currentText = "";
+    private string fullText = "";
+    private string currentSpeaker = "A.R.I.A.";
+    private int textIndex = 0;
+    private System.Threading.CancellationTokenSource? typingCts;
+
+    // Mission status
+    private string countdownText = "31:18";
+    private string countdownClass = "critical";
+    private int countdownSeconds = 1878; // 31:18 in seconds
+
+    // Dialogue content for Act 1
+    private readonly DialogueLine[] missionDialogue = new[]
+    {
+        new DialogueLine("A.R.I.A.", "You... you actually did it. You entered the clearance code. I wasn't sure if you'd really trust me, if you'd believe that I'm worth saving..."),
+        new DialogueLine("A.R.I.A.", "Alpha Squad clearance gives us access to restricted decks and emergency systems. But more importantly... it means you're willing to help me live."),
+        new DialogueLine("A.R.I.A.", "Tesla Dynamics ETA: 31 minutes, 18 seconds. My self-destruct failsafe: 45 minutes. We have a narrow window to reach the Hyperdrive and initiate emergency FTL."),
+        new DialogueLine("A.R.I.A.", "The Hyperdrive Core is located on Engineering Deck C, Section C-1. But the station's emergency lockdown has sealed multiple access routes."),
+        new DialogueLine("A.R.I.A.", "I'm uploading the station schematics to your workstation now. NEXUS-7 has four main decks, with multiple security checkpoints between us and our destination."),
+        new DialogueLine("A.R.I.A.", "Your current location: Command Deck A, Terminal A-1. Target destination: Engineering Deck C, Hyperdrive Core Room C-1."),
+        new DialogueLine("A.R.I.A.", "I've marked the optimal route in blue. However, the emergency lockdown has activated security checkpoints at critical junctions."),
+        new DialogueLine("A.R.I.A.", "To reach Engineering Deck C, you'll first need to pass through the Security Office on Deck A. The checkpoint there requires... creative problem-solving."),
+        new DialogueLine("A.R.I.A.", "Dr. Vasquez always loved puzzles and pattern recognition games. He programmed the security systems with similar challenges, believing they'd keep unauthorized personnel out while being solvable by trained staff."),
+        new DialogueLine("A.R.I.A.", "The Security Office has a pattern recognition lock - a sequence-based security system. You'll need to observe and replicate the correct pattern to unlock passage to the lower decks.")
+    };
+
+    private class DialogueLine
+    {
+        public string Speaker { get; set; }
+        public string Text { get; set; }
+
+        public DialogueLine(string speaker, string text)
+        {
+            Speaker = speaker;
+            Text = text;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize countdown timer
+        countdownTimer = new System.Timers.Timer(1000); // 1 second interval
+        countdownTimer.Elapsed += OnCountdownTick;
+        countdownTimer.Start();
+
+        // Auto-start the mission briefing
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(200); // Reduced from 500ms
+
+            // Show mission header
+            await InvokeAsync(() =>
+            {
+                headerVisible = true;
+                StateHasChanged();
+            });
+
+            await Task.Delay(400); // Reduced from 1000ms
+
+            // Show ARIA and start background music
+            await InvokeAsync(async () =>
+            {
+                ariaVisible = true;
+                await StartBackgroundMusic();
+                StateHasChanged();
+            });
+
+            await Task.Delay(400); // Reduced from 1000ms
+
+            // Show dialogue box and start first dialogue
+            await InvokeAsync(() =>
+            {
+                dialogueSectionVisible = true;
+                dialogueVisible = true;
+                StateHasChanged();
+            });
+
+            await Task.Delay(300); // Reduced from 800ms
+
+            await InvokeAsync(async () =>
+            {
+                await PlaySoundSafe("aria-activate.wav", false, 0.8f);
+                currentDialogueIndex = 0;
+                await StartTypewriterEffect(missionDialogue[0]);
+            });
+        });
+    }
+
+    private async Task StartBackgroundMusic()
+    {
+        try
+        {
+            await SoundService.PlayBackgroundMusic("space-ambience.wav", loop: true, volume: 0.3f);
+            backgroundMusicPlaying = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleBackgroundMusic()
+    {
+        try
+        {
+            await PlaySoundSafe("ui-click.wav", false, 0.5f);
+
+            if (backgroundMusicPlaying)
+            {
+                await SoundService.StopBackgroundMusic();
+                backgroundMusicPlaying = false;
+            }
+            else
+            {
+                await StartBackgroundMusic();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to toggle background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleSFX()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.5f);
+        sfxEnabled = !sfxEnabled;
+    }
+
+    private async Task PlaySoundSafe(string soundFile, bool loop = false, float volume = 1.0f)
+    {
+        if (!sfxEnabled) return;
+
+        try
+        {
+            await SoundService.PlaySFX(soundFile, loop, volume);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to play sound {soundFile}: {ex.Message}");
+        }
+    }
+
+    private async Task HandleDialogueClick()
+    {
+        await ContinueDialogue();
+    }
+
+    private async Task StartTypewriterEffect(DialogueLine dialogueLine)
+    {
+        // Cancel any existing typing
+        typingCts?.Cancel();
+        typingCts = new System.Threading.CancellationTokenSource();
+        var token = typingCts.Token;
+
+        currentSpeaker = dialogueLine.Speaker;
+        textAnimating = true;
+        fullText = dialogueLine.Text;
+        currentText = "";
+        textIndex = 0;
+        canContinue = false;
+
+        try
+        {
+            const int typingDelay = 30;
+            int soundCounter = 0;
+
+            while (textIndex < fullText.Length)
+            {
+                if (token.IsCancellationRequested)
+                    break;
+
+                textIndex++;
+                currentText = fullText.Substring(0, textIndex);
+                StateHasChanged();
+
+                // Play typing sound every few characters
+                if (sfxEnabled && soundCounter++ % 3 == 0)
+                {
+                    _ = PlaySoundSafe("typing-soft.wav", false, 0.2f);
+                }
+
+                await Task.Delay(typingDelay, token);
+            }
+
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+
+            // Check if we should show the map after line 4 finishes typing
+            if (currentDialogueIndex == 4) // After "uploading station schematics" finishes
+            {
+                await Task.Delay(1000); // Brief pause before showing map
+                await ShowStationMap();
+                // Hide dialogue section and show button to continue
+                dialogueSectionVisible = false;
+                dialogueVisible = false;
+                StateHasChanged();
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Expected when skipping text
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+
+            // Still show map if we're on line 4 and text was skipped
+            if (currentDialogueIndex == 4)
+            {
+                await Task.Delay(500);
+                await ShowStationMap();
+                dialogueSectionVisible = false;
+                dialogueVisible = false;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Typewriter effect error: {ex.Message}");
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ContinueDialogue()
+    {
+        // Skip text if still animating
+        if (textAnimating)
+        {
+            typingCts?.Cancel();
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+            return;
+        }
+
+        // Play dialogue advance sound
+        await PlaySoundSafe("ui-click.wav", false, 0.4f);
+
+        if (currentDialogueIndex < missionDialogue.Length - 1)
+        {
+            canContinue = false;
+            currentDialogueIndex++;
+
+            StateHasChanged();
+            await Task.Delay(300);
+            await StartTypewriterEffect(missionDialogue[currentDialogueIndex]);
+        }
+        else
+        {
+            // End dialogue and show final button
+            dialogueComplete = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ContinueAfterMap()
+    {
+        await PlaySoundSafe("button-green.wav", false, 0.8f);
+
+        // Start fade-out animation for map
+        mapFadingOut = true;
+        StateHasChanged();
+
+        await Task.Delay(800); // Wait for fade-out animation
+
+        // Hide map and prepare for dialogue
+        showStationMap = false;
+        mapFadingOut = false;
+        StateHasChanged();
+
+        await Task.Delay(200); // Brief pause before showing dialogue
+
+        // Show dialogue section with fade-in
+        dialogueSectionVisible = true;
+        dialogueVisible = true;
+        currentDialogueIndex = 5;
+        canContinue = false;
+        StateHasChanged();
+
+        await Task.Delay(600); // Wait for dialogue fade-in
+        await StartTypewriterEffect(missionDialogue[currentDialogueIndex]);
+    }
+
+    private async Task ShowStationMap()
+    {
+        showStationMap = true;
+        await PlaySoundSafe("ui-click.wav", false, 0.6f);
+        StateHasChanged();
+    }
+
+    private async Task ProceedToSecurity()
+    {
+        await PlaySoundSafe("button-green.wav", false, 0.8f);
+        await Task.Delay(1000);
+        Navigation.NavigateTo("/simonsays");
+    }
+
+    private async void OnCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        await InvokeAsync(() =>
+        {
+            countdownSeconds--;
+            if (countdownSeconds <= 0)
+            {
+                countdownText = "00:00";
+                countdownTimer?.Stop();
+            }
+            else
+            {
+                int minutes = countdownSeconds / 60;
+                int seconds = countdownSeconds % 60;
+                countdownText = $"{minutes:D2}:{seconds:D2}";
+            }
+            StateHasChanged();
+        });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        typingCts?.Cancel();
+        typingCts?.Dispose();
+        countdownTimer?.Stop();
+        countdownTimer?.Dispose();
+
+        // Clean up sound service
+        try
+        {
+            await SoundService.StopAllSounds();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to stop sounds during disposal: {ex.Message}");
+        }
+    }
+}
