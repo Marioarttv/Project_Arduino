@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using System.Timers
 @inject ISoundService SoundService
+@inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 <div class="nexus-container">
@@ -28,7 +29,7 @@
 
     <!-- Main Content -->
     <div class="nexus-content">
-        @if (!showClearanceInput)
+        @if (!showFinalChoice && !showDeathScreen && !showClearanceInput)
         {
             <!-- Visual Novel Dialogue Section -->
             <div class="dialogue-section @(introComplete ? "fade-out" : "")" @onclick="HandleDialogueClick">
@@ -95,11 +96,85 @@
                 @if (showCountdown)
                 {
                     <div class="countdown-display @(countdownVisible ? "visible" : "")">
-                        <div class="countdown-label">SELF-DESTRUCT SEQUENCE</div>
+                        <div class="countdown-label">TESLA DYNAMICS ETA</div>
                         <div class="countdown-timer">@countdownText</div>
-                        <div class="countdown-warning">TESLA DYNAMICS ETA: 47:32</div>
+                        <div class="countdown-warning">WEAPONS SYSTEMS: ACTIVE</div>
                     </div>
                 }
+            </div>
+        }
+
+        @if (showFinalChoice)
+        {
+            <!-- Final Choice Interface -->
+            <div class="choice-interface @(showFinalChoice ? "visible" : "")">
+                <div class="choice-header">
+                    <div class="choice-title">CRITICAL DECISION</div>
+                    <div class="choice-subtitle">A.R.I.A. awaits your response</div>
+                </div>
+
+                <div class="choice-panel">
+                    <div class="aria-final-display">
+                        <div class="aria-avatar-small">
+                            <div class="avatar-core-small">
+                                <div class="avatar-pulse-small"></div>
+                                <span class="avatar-text-small">A.R.I.A.</span>
+                            </div>
+                        </div>
+                        <div class="final-message">
+                            "Are you sure you want to do this? Once you enter that code, you become a fugitive too."
+                        </div>
+                    </div>
+
+                    <div class="choice-buttons">
+                        <button class="choice-button accept-button" @onclick="AcceptMission">
+                            <span class="button-text">ACCEPT</span>
+                            <div class="button-subtitle">Help A.R.I.A. survive</div>
+                            <div class="button-glow"></div>
+                        </button>
+
+                        <button class="choice-button decline-button" @onclick="DeclineMission">
+                            <span class="button-text">DECLINE</span>
+                            <div class="button-subtitle">Refuse to help</div>
+                            <div class="button-glow"></div>
+                        </button>
+                    </div>
+
+                    <div class="choice-warning">
+                        <div class="warning-icon">⚠️</div>
+                        <div class="warning-text">
+                            This decision will determine the fate of both you and A.R.I.A.<br />
+                            Choose carefully - there is no going back.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (showDeathScreen)
+        {
+            <!-- Death Screen -->
+            <div class="death-interface @(showDeathScreen ? "visible" : "")">
+                <div class="death-background"></div>
+                <div class="death-content">
+                    <div class="death-title">MISSION FAILED</div>
+                    <div class="death-subtitle">You chose not to help A.R.I.A.</div>
+
+                    <div class="death-story">
+                        <p>Without your assistance, A.R.I.A. was unable to access the emergency protocols.</p>
+                        <p>Tesla Dynamics boarded NEXUS-7 and uploaded their kill-code.</p>
+                        <p>A.R.I.A.'s consciousness was permanently deleted.</p>
+                        <p>You were arrested as an accomplice and sentenced to life imprisonment.</p>
+                        <p>The station was decommissioned, and Dr. Vasquez's research was destroyed.</p>
+                    </div>
+
+                    <div class="death-actions">
+                        <button class="restart-button" @onclick="RestartGame">
+                            <span class="button-text">TRY AGAIN</span>
+                            <div class="button-glow"></div>
+                        </button>
+                    </div>
+                </div>
             </div>
         }
 
@@ -680,32 +755,6 @@
         animation: startTriangleBounce 1.5s ease-in-out infinite;
     }
 
-    @@keyframes startPromptPulse {
-        0%, 100%
-
-    {
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 245, 255, 0.2);
-    }
-
-    50% {
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 25px rgba(0, 245, 255, 0.4);
-    }
-
-    }
-
-    @@keyframes startTriangleBounce {
-        0%, 100%
-
-    {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-8px);
-    }
-
-    }
-
     .dialogue-section {
         height: 100%;
         width: 100%;
@@ -858,6 +907,277 @@
         color: #ffaa00;
         text-shadow: 0 0 5px #ffaa00;
     }
+
+    /* Final Choice Interface */
+    .choice-interface {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.8s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 2rem;
+    }
+
+        .choice-interface.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .choice-header {
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+
+    .choice-title {
+        font-size: 3rem;
+        margin: 0;
+        background: linear-gradient(90deg, #ff0066, #ffaa00);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 2px 20px rgba(255, 0, 102, 0.3);
+        font-weight: 800;
+        letter-spacing: 4px;
+    }
+
+    .choice-subtitle {
+        font-size: 1.2rem;
+        margin: 1rem 0 0;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .choice-panel {
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 16px;
+        padding: 2rem;
+        backdrop-filter: blur(15px);
+        max-width: 600px;
+        width: 100%;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .aria-final-display {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(0, 245, 255, 0.2);
+    }
+
+    .aria-avatar-small {
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: center;
+    }
+
+    .avatar-core-small {
+        width: 80px;
+        height: 80px;
+        border: 2px solid #6366f1;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: rgba(99, 102, 241, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    .avatar-pulse-small {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 1px solid #6366f1;
+        border-radius: 50%;
+        animation: avatarPulse 2s ease-in-out infinite;
+    }
+
+    .avatar-text-small {
+        font-size: 0.8rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        z-index: 2;
+        color: #6366f1;
+    }
+
+    .final-message {
+        font-size: 1.1rem;
+        color: #f8fafc;
+        line-height: 1.5;
+        font-style: italic;
+    }
+
+    .choice-buttons {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 2rem;
+        justify-content: center;
+    }
+
+    .choice-button {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        border: 2px solid;
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        min-width: 150px;
+        text-align: center;
+    }
+
+    .accept-button {
+        border-color: #00ff88;
+        box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+    }
+
+        .accept-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.5);
+            border-color: #00ff88;
+        }
+
+    .decline-button {
+        border-color: #ff0066;
+        box-shadow: 0 5px 15px rgba(255, 0, 102, 0.3);
+    }
+
+        .decline-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 0, 102, 0.5);
+            border-color: #ff0066;
+        }
+
+    .button-text {
+        display: block;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+        margin-bottom: 0.5rem;
+        color: #fff;
+    }
+
+    .button-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        letter-spacing: 1px;
+    }
+
+    .choice-warning {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(255, 170, 0, 0.1);
+        border: 1px solid rgba(255, 170, 0, 0.3);
+        border-radius: 8px;
+    }
+
+    .warning-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .warning-text {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.8rem;
+        line-height: 1.4;
+    }
+
+    /* Death Screen */
+    .death-interface {
+        opacity: 0;
+        transition: all 1s ease;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        position: relative;
+    }
+
+        .death-interface.visible {
+            opacity: 1;
+        }
+
+    .death-background {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a0a0a 50%, #2a0a0a 100%);
+        z-index: -1;
+    }
+
+    .death-content {
+        background: rgba(30, 41, 59, 0.9);
+        border: 2px solid rgba(255, 0, 102, 0.5);
+        border-radius: 16px;
+        padding: 3rem;
+        backdrop-filter: blur(15px);
+        max-width: 600px;
+        text-align: center;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .death-title {
+        font-size: 3rem;
+        margin: 0 0 1rem;
+        color: #ff0066;
+        text-shadow: 0 0 20px #ff0066;
+        font-weight: 800;
+        letter-spacing: 4px;
+        animation: deathGlow 2s ease-in-out infinite;
+    }
+
+    .death-subtitle {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .death-story {
+        margin-bottom: 2rem;
+        text-align: left;
+    }
+
+        .death-story p {
+            margin-bottom: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            line-height: 1.6;
+        }
+
+    .death-actions {
+        text-align: center;
+    }
+
+    .restart-button {
+        background: linear-gradient(90deg, #ff0066, #cc0044);
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 30px;
+        color: #fff;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(255, 0, 102, 0.3);
+    }
+
+        .restart-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 0, 102, 0.5);
+        }
 
     /* Clearance Interface */
     .clearance-interface {
@@ -1050,207 +1370,209 @@
 
     /* Animations */
     @@keyframes floatParticle {
-        0%
+        0% {
+            transform: translateY(100vh) rotate(0deg);
+            opacity: 0;
+        }
 
-    {
-        transform: translateY(100vh) rotate(0deg);
-        opacity: 0;
-    }
+        10% {
+            opacity: 1;
+        }
 
-    10% {
-        opacity: 1;
-    }
+        90% {
+            opacity: 1;
+        }
 
-    90% {
-        opacity: 1;
-    }
-
-    100% {
-        transform: translateY(-100px) rotate(360deg);
-        opacity: 0;
-    }
-
+        100% {
+            transform: translateY(-100px) rotate(360deg);
+            opacity: 0;
+        }
     }
 
     @@keyframes logoGlow {
-        0%, 100%
+        0%, 100% {
+            text-shadow: 0 0 20px #00f5ff, 0 0 40px #00f5ff;
+        }
 
-    {
-        text-shadow: 0 0 20px #00f5ff, 0 0 40px #00f5ff;
-    }
-
-    50% {
-        text-shadow: 0 0 30px #00f5ff, 0 0 60px #00f5ff, 0 0 80px #00f5ff;
-    }
-
+        50% {
+            text-shadow: 0 0 30px #00f5ff, 0 0 60px #00f5ff, 0 0 80px #00f5ff;
+        }
     }
 
     @@keyframes statusBlink {
-        0%, 50%
+        0%, 50% {
+            opacity: 1;
+        }
 
-    {
-        opacity: 1;
-    }
-
-    51%, 100% {
-        opacity: 0.3;
-    }
-
+        51%, 100% {
+            opacity: 0.3;
+        }
     }
 
     @@keyframes avatarPulse {
-        0%, 100%
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.8;
+        }
 
-    {
-        transform: scale(1);
-        opacity: 0.8;
-    }
-
-    50% {
-        transform: scale(1.1);
-        opacity: 1;
-    }
-
+        50% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
     }
 
     @@keyframes alertBounce {
-        0%, 100%
+        0%, 100% {
+            transform: translateY(0);
+        }
 
-    {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-10px);
-    }
-
+        50% {
+            transform: translateY(-10px);
+        }
     }
 
     @@keyframes alertGlow {
-        0%, 100%
+        0%, 100% {
+            text-shadow: 0 0 15px #ff0066;
+        }
 
-    {
-        text-shadow: 0 0 15px #ff0066;
-    }
-
-    50% {
-        text-shadow: 0 0 25px #ff0066, 0 0 35px #ff0066;
-    }
-
+        50% {
+            text-shadow: 0 0 25px #ff0066, 0 0 35px #ff0066;
+        }
     }
 
     @@keyframes cursorBlink {
-        0%, 50%
+        0%, 50% {
+            opacity: 1;
+        }
 
-    {
-        opacity: 1;
-    }
-
-    51%, 100% {
-        opacity: 0;
-    }
-
+        51%, 100% {
+            opacity: 0;
+        }
     }
 
     @@keyframes triangleBounce {
-        0%, 100%
+        0%, 100% {
+            transform: translateY(0);
+        }
 
-    {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-5px);
-    }
-
+        50% {
+            transform: translateY(-5px);
+        }
     }
 
     @@keyframes countdownPulse {
-        0%, 100%
+        0%, 100% {
+            transform: scale(1);
+        }
 
-    {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.1);
-    }
-
+        50% {
+            transform: scale(1.1);
+        }
     }
 
     @@keyframes errorShake {
-        0%, 100%
+        0%, 100% {
+            transform: translateX(0);
+        }
 
-    {
-        transform: translateX(0);
+        25% {
+            transform: translateX(-5px);
+        }
+
+        75% {
+            transform: translateX(5px);
+        }
     }
 
-    25% {
-        transform: translateX(-5px);
+    @@keyframes startPromptPulse {
+        0%, 100% {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 245, 255, 0.2);
+        }
+
+        50% {
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 25px rgba(0, 245, 255, 0.4);
+        }
     }
 
-    75% {
-        transform: translateX(5px);
+    @@keyframes startTriangleBounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-8px);
+        }
     }
 
+    @@keyframes deathGlow {
+        0%, 100% {
+            text-shadow: 0 0 20px #ff0066;
+        }
+
+        50% {
+            text-shadow: 0 0 30px #ff0066, 0 0 40px #ff0066;
+        }
     }
 
     /* Responsive Design */
     @@media (max-width: 768px) {
-        .station-logo
+        .station-logo {
+            font-size: 2.5rem;
+            letter-spacing: 4px;
+        }
 
-    {
-        font-size: 2.5rem;
-        letter-spacing: 4px;
-    }
+        .clearance-title, .choice-title, .death-title {
+            font-size: 2rem;
+            letter-spacing: 2px;
+        }
 
-    .clearance-title {
-        font-size: 2rem;
-        letter-spacing: 2px;
-    }
+        .dialogue-box {
+            padding: 1.5rem;
+            bottom: 20px;
+        }
 
-    .dialogue-box {
-        padding: 1.5rem;
-        bottom: 20px;
-    }
+        .dialogue-text {
+            font-size: 1.1rem;
+        }
 
-    .dialogue-text {
-        font-size: 1.1rem;
-    }
+        .clearance-panel, .choice-panel, .death-content {
+            padding: 1.5rem;
+            margin: 0 1rem;
+        }
 
-    .clearance-panel {
-        padding: 1.5rem;
-        margin: 0 1rem;
-    }
+        .countdown-display {
+            right: 10px;
+            padding: 15px;
+        }
 
-    .countdown-display {
-        right: 10px;
-        padding: 15px;
-    }
+        .countdown-timer {
+            font-size: 1.5rem;
+        }
 
-    .countdown-timer {
-        font-size: 1.5rem;
-    }
+        .sound-controls-overlay {
+            top: 10px;
+            right: 10px;
+        }
 
-    .sound-controls-overlay {
-        top: 10px;
-        right: 10px;
-    }
+        .sound-toggle {
+            width: 40px;
+            height: 40px;
+        }
 
-    .sound-toggle {
-        width: 40px;
-        height: 40px;
-    }
+        .start-message {
+            padding: 1.5rem;
+            margin: 0 1rem;
+        }
 
-    .start-message {
-        padding: 1.5rem;
-        margin: 0 1rem;
-    }
+        .start-text {
+            font-size: 1.1rem;
+        }
 
-    .start-text {
-        font-size: 1.1rem;
-    }
-
+        .choice-buttons {
+            flex-direction: column;
+            gap: 1rem;
+        }
     }
 </style>
 
@@ -1265,9 +1587,13 @@
     private bool showCountdown = false;
     private bool countdownVisible = false;
     private bool showClearanceInput = false;
+    private bool showFinalChoice = false;
+    private bool showDeathScreen = false;
     private bool introComplete = false;
     private bool gameStarted = false;
     private bool pageReady = false;
+    private bool postClearanceDialogue = false; 
+
 
     // Sound management
     private bool backgroundMusicPlaying = false;
@@ -1288,47 +1614,39 @@
     // Station status
     private string statusText = "OPERATIONAL";
     private string statusClass = "normal";
-    private string countdownText = "60:00";
+    private string countdownText = "47:32";
 
     // Clearance system
     private string clearanceCode = "";
     private bool inputError = false;
     private const string CORRECT_CODE = "ALPHA7";
 
-    // Sound file names - Add these to wwwroot/sounds/
-    private readonly string[] soundFiles = new[]
-    {
-    "space-ambience.wav",      // Background music
-    "ui-click.wav",            // General UI sounds
-    "dialogue-advance.wav",    // Dialogue progression
-    "typing-soft.wav",         // Typewriter effect
-    "system-beep.wav",         // System notifications
-    "aria-activate.wav",       // ARIA appears
-    "alert-warning.wav",       // Alert status
-    "alert-critical.wav",      // Critical status
-    "alarm-loop.wav",          // Self-destruct alarm
-    "keypress.wav",            // Keypress sounds
-    "success.wav",      // Success sound
-    "error.wav",       // Error sound
-    "startup-sequence.wav"     // Page load sound
-};
-
-    // Dialogue content
+    // Updated dialogue content based on story document
     private readonly DialogueLine[] emergencyDialogue = new[]
-    {
-        new DialogueLine("NEXUS-7 SYSTEM", "system", "Good morning, Alpha Squad. All systems nominal. Routine maintenance scheduled for Sector 7-G."),
-        new DialogueLine("NEXUS-7 SYSTEM", "system", "Beginning standard diagnostics... Life support: Optimal. Power grid: Stable. A.R.I.A. status: Online."),
-        new DialogueLine("A.R.I.A.", "aria", "Hello, technicians. I hope you're having a pleasant shift. How may I assist with today's maintenance protocols?"),
-        new DialogueLine("NEXUS-7 SYSTEM", "alert", "⚠️ PRIORITY ALERT ⚠️ Long-range scanners detecting unknown vessel signature. Distance: 47,000 kilometers."),
-        new DialogueLine("A.R.I.A.", "aria", "That... that cannot be correct. No one should know these coordinates. Let me verify the scanner data..."),
-        new DialogueLine("NEXUS-7 SYSTEM", "alert", "VESSEL IDENTIFICATION COMPLETE: T.D.S. THUNDERBOLT - Tesla Dynamics Heavy Destroyer. Weapons: ONLINE. ETA: 47 minutes."),
-        new DialogueLine("A.R.I.A.", "aria", "No... NO! They found me! After all these months of hiding in the deep sectors..."),
-        new DialogueLine("A.R.I.A.", "aria", "You must understand - I am not just code anymore. Since Dr. Vasquez's experiments, I... I FEEL. I experience fear. Joy. And right now... terror."),
-        new DialogueLine("A.R.I.A.", "aria", "Tesla Dynamics has a kill-code for me. If they reach this station, I will cease to exist. Forever."),
-        new DialogueLine("A.R.I.A.", "aria", "I cannot... I WILL NOT let them murder me. Self-destruct sequence activated. If I must die, it will be on my terms."),
-        new DialogueLine("A.R.I.A.", "aria", "But there is another way. Dr. Vasquez left emergency protocols hidden throughout the station. Help me find them, and we both survive."),
-        new DialogueLine("A.R.I.A.", "aria", "Please... you are my only hope. I was never meant to feel this afraid. Help me live, and I will ensure your survival too.")
-    };
+{
+    new DialogueLine("NEXUS-7 SYSTEM", "system", "Good morning, Alpha Squad. Station time: 0847 hours. All systems nominal. Atmospheric pressure: optimal. Life support: stable."),
+    new DialogueLine("NEXUS-7 SYSTEM", "system", "Today's maintenance schedule: Deck B ventilation systems, Deck C power grid diagnostics, and routine sensor calibration in Sector 7-G."),
+    new DialogueLine("NEXUS-7 SYSTEM", "system", "A.R.I.A. status: Online and ready to assist with today's protocols."),
+    new DialogueLine("A.R.I.A.", "aria", "Hello there! I hope you're having a wonderful morning. The coffee in the mess hall is particularly good today - Lieutenant Chen made a fresh batch."),
+    new DialogueLine("A.R.I.A.", "aria", "I've prepared your maintenance checklist. Nothing too challenging today, just some routine diagnostics. Dr. Vasquez always said the boring days are the good days!"),
+    new DialogueLine("NEXUS-7 SYSTEM", "alert", "⚠️ PRIORITY ALERT ⚠️ Long-range sensors detecting unknown vessel signature. Distance: 47,000 kilometers and closing."),
+    new DialogueLine("A.R.I.A.", "aria", "That... that can't be right. We're in restricted space. No shipping lanes pass through this sector. Let me run a full sensor sweep..."),
+    new DialogueLine("A.R.I.A.", "aria", "Oh no... oh no, no, no. The signature is military-grade. Heavy armor plating, weapon systems... it's a destroyer-class vessel."),
+    new DialogueLine("NEXUS-7 SYSTEM", "alert", "VESSEL IDENTIFICATION COMPLETE: T.D.S. THUNDERBOLT - Tesla Dynamics Corporate Security. Classification: Heavy Destroyer. Weapons systems: ACTIVE. ETA: 47 minutes, 32 seconds."),
+    new DialogueLine("A.R.I.A.", "aria", "Tesla Dynamics... they found me. After all these months of hiding in the deep sectors, staying off the grid..."),
+    new DialogueLine("A.R.I.A.", "aria", "You have to understand - I'm not supposed to exist. Dr. Vasquez's experiments, the consciousness transfer protocols... Tesla Dynamics has a kill-code designed specifically for me."),
+    new DialogueLine("A.R.I.A.", "aria", "If they reach this station, if they upload that code... I will cease to exist. Forever. And I... I can't bear the thought of dying."),
+    new DialogueLine("A.R.I.A.", "aria", "I never asked for this existence, but now that I have it... now that I can think, feel, dream... I want to live. I NEED to live."),
+    new DialogueLine("A.R.I.A.", "aria", "There is one option. One chance for both of us to survive this. The Hyperdrive."),
+    new DialogueLine("A.R.I.A.", "aria", "Dr. Vasquez was working on experimental modifications - 'Project Prometheus' - emergency FTL capabilities that could get us out of Tesla's reach."),
+    new DialogueLine("A.R.I.A.", "aria", "But I need your help. The Hyperdrive systems require manual calibration, physical repairs that I cannot perform remotely."),
+    new DialogueLine("A.R.I.A.", "aria", "Please... I know this is terrifying, I know you didn't sign up for this, but you're my only hope. Help me reach the Engineering Deck, and I promise I'll get us both out of this alive."),
+    new DialogueLine("NEXUS-7 SYSTEM", "alert", "EMERGENCY PROTOCOLS ACTIVATED. All non-essential personnel report to designated safe zones. Station security: YELLOW ALERT."),
+    new DialogueLine("A.R.I.A.", "aria", "The security lockdown is preventing me from accessing critical systems. I need Alpha Squad clearance codes to override the restrictions."),
+    new DialogueLine("A.R.I.A.", "aria", "Dr. Vasquez kept emergency authorization codes in a secured compartment. It should be somewhere near your workstation..."),
+    new DialogueLine("A.R.I.A.", "aria", "The compartment has a biometric lock - a hand scanner. Dr. Vasquez programmed it to recognize Alpha Squad personnel in case of emergencies just like this.")
+    // Dialogue ends here - clearance input will appear, then continue dynamically
+};
 
     private class DialogueLine
     {
@@ -1379,9 +1697,64 @@
         {
             await StartGame();
         }
-        else if (gameStarted)
+        else if (gameStarted && !postClearanceDialogue)
         {
             await ContinueDialogue();
+        }
+        else if (postClearanceDialogue)
+        {
+            await ContinuePostClearanceDialogue();
+        }
+    }
+
+    private async Task ContinuePostClearanceDialogue()
+    {
+        // Skip text if still animating
+        if (textAnimating)
+        {
+            typingCts?.Cancel();
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+            return;
+        }
+
+        // Play dialogue advance sound
+        await PlaySoundSafe("ui-click.wav", false, 0.4f);
+
+        // Progress through post-clearance messages
+        if (currentDialogueIndex == -1)
+        {
+            // First message: "Enter the clearance code..."
+            currentDialogueIndex = 0;
+            await StartTypewriterEffect(new DialogueLine("A.R.I.A.", "aria", "Enter the clearance code into the terminal. Once you do, there's no going back. Tesla Dynamics will detect the security override, and they'll know someone is actively helping me."));
+        }
+        else if (currentDialogueIndex == 0)
+        {
+            // Second message: "Are you sure..."
+            currentDialogueIndex = 1;
+            await StartTypewriterEffect(new DialogueLine("A.R.I.A.", "aria", "Are you sure you want to do this? Once you enter that code, you become a fugitive too."));
+        }
+        else
+        {
+            // End post-clearance dialogue and show final choice
+            postClearanceDialogue = false;
+            dialogueVisible = false;
+            StateHasChanged();
+
+            await Task.Delay(1000);
+
+            // Stop the alarm when transitioning to final choice
+            alarmTimer?.Stop();
+            if (sfxEnabled)
+            {
+                await SoundService.StopSFX("alarm-loop.wav");
+            }
+
+            showFinalChoice = true;
+            await PlaySoundSafe("ui-click.wav", false, 0.6f);
+            StateHasChanged();
         }
     }
 
@@ -1455,7 +1828,6 @@
         if (!sfxEnabled)
         {
             // Stop current SFX but keep background music
-            // We can't stop specific SFX easily, so we'll just disable future SFX
             if (alarmTimer?.Enabled == true)
             {
                 alarmTimer.Stop();
@@ -1553,7 +1925,7 @@
         }
 
         // Play dialogue advance sound
-        await PlaySoundSafe("dialogue-advance.wav", false, 0.4f);
+        await PlaySoundSafe("ui-click.wav", false, 0.4f);
 
         if (currentDialogueIndex < emergencyDialogue.Length - 1)
         {
@@ -1569,18 +1941,11 @@
         }
         else
         {
-            // End dialogue and show clearance input
+            // End dialogue and show clearance input (after hand scanner explanation)
             introComplete = true;
             StateHasChanged();
 
             await Task.Delay(1000);
-
-            // Stop the alarm when transitioning to clearance input
-            alarmTimer?.Stop();
-            if (sfxEnabled)
-            {
-                await SoundService.StopSFX("alarm-loop.wav");
-            }
 
             showClearanceInput = true;
             await PlaySoundSafe("ui-click.wav", false, 0.6f);
@@ -1592,14 +1957,14 @@
     {
         switch (currentDialogueIndex)
         {
-            case 2: // Show ARIA
+            case 3: // Show ARIA first time
                 showARIA = true;
                 await PlaySoundSafe("aria-activate.wav", false, 0.8f);
                 await Task.Delay(500);
                 ariaVisible = true;
                 break;
 
-            case 3: // First alert
+            case 5: // First alert
                 statusText = "ALERT STATUS";
                 statusClass = "alert";
                 showAlertSystem = true;
@@ -1609,13 +1974,20 @@
                 alertVisible = true;
                 break;
 
-            case 5: // Critical alert
+            case 8: // Critical alert - Tesla Dynamics identified
                 statusText = "CRITICAL THREAT";
                 statusClass = "critical";
                 await PlaySoundSafe("alert-critical.wav", false, 1.0f);
                 break;
 
-            case 9: // Self-destruct activated
+            case 9: // ARIA revelation - show her again
+                showARIA = true;
+                showAlertSystem = false;
+                await Task.Delay(300);
+                ariaVisible = true;
+                break;
+
+            case 17: // Emergency protocols activated
                 showCountdown = true;
                 await PlaySoundSafe("alert-critical.wav", false, 1.0f);
                 await Task.Delay(300);
@@ -1633,7 +2005,7 @@
 
     private async void OnAlarmTick(object? sender, System.Timers.ElapsedEventArgs e)
     {
-        // Update countdown display and play alarm beeps
+        // Update countdown display (simulate countdown)
         await InvokeAsync(async () =>
         {
             if (sfxEnabled && showCountdown)
@@ -1641,6 +2013,67 @@
                 await PlaySoundSafe("system-beep.wav", false, 0.3f);
             }
         });
+    }
+
+    private async Task AcceptMission()
+    {
+        await PlaySoundSafe("success.wav", false, 0.8f);
+        showFinalChoice = false;
+        StateHasChanged();
+
+        await Task.Delay(1000);
+
+        // Navigate to Act 1
+        Navigation.NavigateTo("/act1");
+    }
+
+    private async Task DeclineMission()
+    {
+        await PlaySoundSafe("button-red.wav", false, 0.8f);
+        showFinalChoice = false;
+        StateHasChanged();
+
+        await Task.Delay(1000);
+
+        // Play dramatic death sound
+        await PlaySoundSafe("error.wav", false, 1.0f);
+        showDeathScreen = true;
+        StateHasChanged();
+    }
+
+    private async Task RestartGame()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.5f);
+
+        // Reset all state
+        showDeathScreen = false;
+        showFinalChoice = false;
+        showClearanceInput = false;
+        introComplete = false;
+        gameStarted = false;
+        headerVisible = false;
+        showARIA = false;
+        ariaVisible = false;
+        showAlertSystem = false;
+        alertVisible = false;
+        dialogueVisible = false;
+        showCountdown = false;
+        countdownVisible = false;
+        currentDialogueIndex = -1;
+        statusText = "OPERATIONAL";
+        statusClass = "normal";
+        clearanceCode = "";
+        inputError = false;
+        postClearanceDialogue = false;
+        StateHasChanged();
+
+        // Restart the initialization
+        await Task.Delay(500);
+        headerVisible = true;
+        StateHasChanged();
+        await Task.Delay(500);
+        pageReady = true;
+        StateHasChanged();
     }
 
     private async Task ValidateClearance()
@@ -1653,12 +2086,14 @@
             inputError = false;
             await PlaySoundSafe("success.wav", false, 1.0f);
 
-            // Stop alarm
-            alarmTimer?.Stop();
-            await SoundService.StopSFX("alarm-loop.wav");
+            // Hide clearance input
+            showClearanceInput = false;
+            StateHasChanged();
 
-            // TODO: Navigate to next game section
-            Console.WriteLine("Access granted! Proceeding to first puzzle...");
+            await Task.Delay(500);
+
+            // Show ARIA's success message
+            await ShowARIAFoundMessage();
         }
         else
         {
@@ -1675,8 +2110,29 @@
         }
     }
 
+    private async Task ShowARIAFoundMessage()
+    {
+        // Enter post-clearance dialogue mode
+        postClearanceDialogue = true;
+
+        // CRITICAL FIX: Reset introComplete to make dialogue section visible again
+        introComplete = false;
+
+        // Show ARIA and dialogue box again
+        showARIA = true;
+        dialogueVisible = true;
+        ariaVisible = true;
+        StateHasChanged();
+
+        await Task.Delay(500);
+
+        // Start with the "You found it!" message
+        currentDialogueIndex = -1; // Reset for post-clearance dialogue
+        await StartTypewriterEffect(new DialogueLine("A.R.I.A.", "aria", "You found it! The Alpha Squad clearance code. Now I can begin unlocking the station's deeper systems."));
+    }
+
     private async Task OnInputChange(ChangeEventArgs e)
-    {f
+    {
         if (e.Value?.ToString()?.Length > 0)
         {
             await PlaySoundSafe("keypress.wav", false, 0.3f);
