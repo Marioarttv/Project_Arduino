@@ -1,5 +1,7 @@
 ﻿@page "/"
 @using System.Timers
+@inject ISoundService SoundService
+@implements IAsyncDisposable
 
 <div class="nexus-container">
     <!-- Background Effects -->
@@ -14,18 +16,41 @@
         <div class="grid-overlay"></div>
     </div>
 
+    <!-- Sound Controls -->
+    <div class="sound-controls-overlay">
+        <button class="sound-toggle" @onclick="ToggleBackgroundMusic" title="Toggle Background Music">
+            <span class="sound-icon">@(backgroundMusicPlaying ? "🔊" : "🔇")</span>
+        </button>
+        <button class="sound-toggle" @onclick="ToggleSFX" title="Toggle Sound Effects">
+            <span class="sound-icon">@(sfxEnabled ? "🎵" : "🔕")</span>
+        </button>
+    </div>
+
     <!-- Main Content -->
     <div class="nexus-content">
         @if (!showClearanceInput)
         {
             <!-- Visual Novel Dialogue Section -->
-            <div class="dialogue-section @(introComplete ? "fade-out" : "")" @onclick="ContinueDialogue">
+            <div class="dialogue-section @(introComplete ? "fade-out" : "")" @onclick="HandleDialogueClick">
                 <!-- Station Header -->
                 <div class="station-header @(headerVisible ? "visible" : "")">
                     <div class="station-logo">NEXUS-7</div>
                     <div class="station-subtitle">Deep Space Research Station</div>
                     <div class="station-status @statusClass">@statusText</div>
                 </div>
+
+                @if (!gameStarted && pageReady)
+                {
+                    <!-- Click to Start Message -->
+                    <div class="start-prompt">
+                        <div class="start-message">
+                            <div class="start-text">Click anywhere to begin emergency protocols</div>
+                            <div class="start-indicator">
+                                <span class="start-triangle"></span>
+                            </div>
+                        </div>
+                    </div>
+                }
 
                 <!-- Character/System Display -->
                 <div class="system-container">
@@ -95,7 +120,7 @@
 
                     <div class="input-section">
                         <label class="input-label">CLEARANCE CODE</label>
-                        <input @bind="clearanceCode" @onkeypress="HandleKeyPress"
+                        <input @bind="clearanceCode" @onkeypress="HandleKeyPress" @oninput="OnInputChange"
                                class="clearance-input @(inputError ? "error" : "")"
                                placeholder="Enter access code..."
                                maxlength="10" />
@@ -135,6 +160,40 @@
         overflow: hidden;
         font-family: 'Courier New', monospace;
         color: #00f5ff;
+    }
+
+    /* Sound Controls */
+    .sound-controls-overlay {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        gap: 10px;
+    }
+
+    .sound-toggle {
+        width: 50px;
+        height: 50px;
+        border: 2px solid rgba(0, 245, 255, 0.5);
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .sound-toggle:hover {
+            border-color: #00f5ff;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+    .sound-icon {
+        font-size: 1.2rem;
     }
 
     /* Background Scene */
@@ -498,6 +557,7 @@
         position: relative;
         margin-top: 260px;
     }
+
     .aria-display {
         text-align: center;
         opacity: 0;
@@ -577,7 +637,75 @@
         animation: alertGlow 1s ease-in-out infinite;
     }
 
-    /* Dialogue Section */
+    /* Start Prompt */
+    .start-prompt {
+        position: absolute;
+        bottom: 50%;
+        left: 50%;
+        transform: translate(-50%, 50%);
+        z-index: 20;
+    }
+
+    .start-message {
+        text-align: center;
+        background: rgba(17, 24, 39, 0.9);
+        border: 2px solid rgba(0, 245, 255, 0.5);
+        border-radius: 12px;
+        backdrop-filter: blur(15px);
+        padding: 2rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 245, 255, 0.2);
+        animation: startPromptPulse 2s ease-in-out infinite;
+    }
+
+    .start-text {
+        color: #f8fafc;
+        font-size: 1.3rem;
+        margin-bottom: 1rem;
+        letter-spacing: 1px;
+    }
+
+    .start-indicator {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .start-triangle {
+        width: 0;
+        height: 0;
+        border-left: 12px solid transparent;
+        border-right: 12px solid transparent;
+        border-top: 18px solid #00f5ff;
+        filter: drop-shadow(0 0 8px rgba(0, 245, 255, 0.8));
+        animation: startTriangleBounce 1.5s ease-in-out infinite;
+    }
+
+    @@keyframes startPromptPulse {
+        0%, 100%
+
+    {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(0, 245, 255, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 25px rgba(0, 245, 255, 0.4);
+    }
+
+    }
+
+    @@keyframes startTriangleBounce {
+        0%, 100%
+
+    {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
+
+    }
+
     .dialogue-section {
         height: 100%;
         width: 100%;
@@ -922,155 +1050,207 @@
 
     /* Animations */
     @@keyframes floatParticle {
-        0% {
-            transform: translateY(100vh) rotate(0deg);
-            opacity: 0;
-        }
+        0%
 
-        10% {
-            opacity: 1;
-        }
+    {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+    }
 
-        90% {
-            opacity: 1;
-        }
+    10% {
+        opacity: 1;
+    }
 
-        100% {
-            transform: translateY(-100px) rotate(360deg);
-            opacity: 0;
-        }
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+    }
+
     }
 
     @@keyframes logoGlow {
-        0%, 100% {
-            text-shadow: 0 0 20px #00f5ff, 0 0 40px #00f5ff;
-        }
+        0%, 100%
 
-        50% {
-            text-shadow: 0 0 30px #00f5ff, 0 0 60px #00f5ff, 0 0 80px #00f5ff;
-        }
+    {
+        text-shadow: 0 0 20px #00f5ff, 0 0 40px #00f5ff;
+    }
+
+    50% {
+        text-shadow: 0 0 30px #00f5ff, 0 0 60px #00f5ff, 0 0 80px #00f5ff;
+    }
+
     }
 
     @@keyframes statusBlink {
-        0%, 50% {
-            opacity: 1;
-        }
+        0%, 50%
 
-        51%, 100% {
-            opacity: 0.3;
-        }
+    {
+        opacity: 1;
+    }
+
+    51%, 100% {
+        opacity: 0.3;
+    }
+
     }
 
     @@keyframes avatarPulse {
-        0%, 100% {
-            transform: scale(1);
-            opacity: 0.8;
-        }
+        0%, 100%
 
-        50% {
-            transform: scale(1.1);
-            opacity: 1;
-        }
+    {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
     }
 
     @@keyframes alertBounce {
-        0%, 100% {
-            transform: translateY(0);
-        }
+        0%, 100%
 
-        50% {
-            transform: translateY(-10px);
-        }
+    {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+
     }
 
     @@keyframes alertGlow {
-        0%, 100% {
-            text-shadow: 0 0 15px #ff0066;
-        }
+        0%, 100%
 
-        50% {
-            text-shadow: 0 0 25px #ff0066, 0 0 35px #ff0066;
-        }
+    {
+        text-shadow: 0 0 15px #ff0066;
+    }
+
+    50% {
+        text-shadow: 0 0 25px #ff0066, 0 0 35px #ff0066;
+    }
+
     }
 
     @@keyframes cursorBlink {
-        0%, 50% {
-            opacity: 1;
-        }
+        0%, 50%
 
-        51%, 100% {
-            opacity: 0;
-        }
+    {
+        opacity: 1;
+    }
+
+    51%, 100% {
+        opacity: 0;
+    }
+
     }
 
     @@keyframes triangleBounce {
-        0%, 100% {
-            transform: translateY(0);
-        }
+        0%, 100%
 
-        50% {
-            transform: translateY(-5px);
-        }
+    {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+
     }
 
     @@keyframes countdownPulse {
-        0%, 100% {
-            transform: scale(1);
-        }
+        0%, 100%
 
-        50% {
-            transform: scale(1.1);
-        }
+    {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
     }
 
     @@keyframes errorShake {
-        0%, 100% {
-            transform: translateX(0);
-        }
+        0%, 100%
 
-        25% {
-            transform: translateX(-5px);
-        }
+    {
+        transform: translateX(0);
+    }
 
-        75% {
-            transform: translateX(5px);
-        }
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
+
     }
 
     /* Responsive Design */
     @@media (max-width: 768px) {
-        .station-logo {
-            font-size: 2.5rem;
-            letter-spacing: 4px;
-        }
+        .station-logo
 
-        .clearance-title {
-            font-size: 2rem;
-            letter-spacing: 2px;
-        }
+    {
+        font-size: 2.5rem;
+        letter-spacing: 4px;
+    }
 
-        .dialogue-box {
-            padding: 1.5rem;
-            bottom: 20px;
-        }
+    .clearance-title {
+        font-size: 2rem;
+        letter-spacing: 2px;
+    }
 
-        .dialogue-text {
-            font-size: 1.1rem;
-        }
+    .dialogue-box {
+        padding: 1.5rem;
+        bottom: 20px;
+    }
 
-        .clearance-panel {
-            padding: 1.5rem;
-            margin: 0 1rem;
-        }
+    .dialogue-text {
+        font-size: 1.1rem;
+    }
 
-        .countdown-display {
-            right: 10px;
-            padding: 15px;
-        }
+    .clearance-panel {
+        padding: 1.5rem;
+        margin: 0 1rem;
+    }
 
-        .countdown-timer {
-            font-size: 1.5rem;
-        }
+    .countdown-display {
+        right: 10px;
+        padding: 15px;
+    }
+
+    .countdown-timer {
+        font-size: 1.5rem;
+    }
+
+    .sound-controls-overlay {
+        top: 10px;
+        right: 10px;
+    }
+
+    .sound-toggle {
+        width: 40px;
+        height: 40px;
+    }
+
+    .start-message {
+        padding: 1.5rem;
+        margin: 0 1rem;
+    }
+
+    .start-text {
+        font-size: 1.1rem;
+    }
+
     }
 </style>
 
@@ -1086,6 +1266,13 @@
     private bool countdownVisible = false;
     private bool showClearanceInput = false;
     private bool introComplete = false;
+    private bool gameStarted = false;
+    private bool pageReady = false;
+
+    // Sound management
+    private bool backgroundMusicPlaying = false;
+    private bool sfxEnabled = true;
+    private System.Timers.Timer? alarmTimer;
 
     // Dialogue system
     private bool textAnimating = false;
@@ -1107,6 +1294,24 @@
     private string clearanceCode = "";
     private bool inputError = false;
     private const string CORRECT_CODE = "ALPHA7";
+
+    // Sound file names - Add these to wwwroot/sounds/
+    private readonly string[] soundFiles = new[]
+    {
+    "space-ambience.wav",      // Background music
+    "ui-click.wav",            // General UI sounds
+    "dialogue-advance.wav",    // Dialogue progression
+    "typing-soft.wav",         // Typewriter effect
+    "system-beep.wav",         // System notifications
+    "aria-activate.wav",       // ARIA appears
+    "alert-warning.wav",       // Alert status
+    "alert-critical.wav",      // Critical status
+    "alarm-loop.wav",          // Self-destruct alarm
+    "keypress.wav",            // Keypress sounds
+    "success.wav",      // Success sound
+    "error.wav",       // Error sound
+    "startup-sequence.wav"     // Page load sound
+};
 
     // Dialogue content
     private readonly DialogueLine[] emergencyDialogue = new[]
@@ -1141,37 +1346,136 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // Start the introduction sequence
+        // Initialize alarm timer for countdown
+        alarmTimer = new System.Timers.Timer(1000); // 1 second interval
+        alarmTimer.Elapsed += OnAlarmTick;
+
+        // Load the page and show initial elements
         _ = Task.Run(async () =>
         {
-            await Task.Delay(1000);
+            await Task.Delay(500);
 
-            // Show station header
+            // Show station header immediately
             await InvokeAsync(() =>
             {
                 headerVisible = true;
                 StateHasChanged();
             });
 
-            await Task.Delay(1500);
-
-            // Show dialogue box
-            await InvokeAsync(() =>
-            {
-                dialogueVisible = true;
-                StateHasChanged();
-            });
-
             await Task.Delay(500);
 
-            // Start first dialogue
+            // Page is ready, wait for user click
             await InvokeAsync(() =>
             {
-                currentDialogueIndex = 0;
-                StartTypewriterEffect(emergencyDialogue[0]);
+                pageReady = true;
                 StateHasChanged();
             });
         });
+    }
+
+    private async Task HandleDialogueClick()
+    {
+        if (!gameStarted && pageReady)
+        {
+            await StartGame();
+        }
+        else if (gameStarted)
+        {
+            await ContinueDialogue();
+        }
+    }
+
+    private async Task StartGame()
+    {
+        if (gameStarted || !pageReady) return;
+
+        gameStarted = true;
+        StateHasChanged();
+
+        // Play startup sound and begin ambient music
+        await PlaySoundSafe("startup-sequence.wav", false, 0.7f);
+        await Task.Delay(1000);
+        await StartBackgroundMusic();
+
+        await Task.Delay(500);
+
+        // Show dialogue box
+        dialogueVisible = true;
+        StateHasChanged();
+
+        await PlaySoundSafe("ui-click.wav", false, 0.4f);
+        await Task.Delay(500);
+
+        // Start first dialogue
+        currentDialogueIndex = 0;
+        await StartTypewriterEffect(emergencyDialogue[0]);
+    }
+
+    private async Task StartBackgroundMusic()
+    {
+        try
+        {
+            await SoundService.PlayBackgroundMusic("space-ambience.mp3", loop: true, volume: 0.3f);
+            backgroundMusicPlaying = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleBackgroundMusic()
+    {
+        try
+        {
+            await PlaySoundSafe("ui-click.wav", false, 0.5f);
+
+            if (backgroundMusicPlaying)
+            {
+                await SoundService.StopBackgroundMusic();
+                backgroundMusicPlaying = false;
+            }
+            else
+            {
+                await StartBackgroundMusic();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to toggle background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleSFX()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.5f);
+        sfxEnabled = !sfxEnabled;
+
+        if (!sfxEnabled)
+        {
+            // Stop current SFX but keep background music
+            // We can't stop specific SFX easily, so we'll just disable future SFX
+            if (alarmTimer?.Enabled == true)
+            {
+                alarmTimer.Stop();
+                await SoundService.StopSFX("alarm-loop.wav");
+            }
+        }
+    }
+
+    private async Task PlaySoundSafe(string soundFile, bool loop = false, float volume = 1.0f)
+    {
+        if (!sfxEnabled) return;
+
+        try
+        {
+            await SoundService.PlaySFX(soundFile, loop, volume);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to play sound {soundFile}: {ex.Message}");
+        }
     }
 
     private async Task StartTypewriterEffect(DialogueLine dialogueLine)
@@ -1192,6 +1496,7 @@
         try
         {
             const int typingDelay = 30;
+            int soundCounter = 0;
 
             while (textIndex < fullText.Length)
             {
@@ -1201,6 +1506,12 @@
                 textIndex++;
                 currentText = fullText.Substring(0, textIndex);
                 StateHasChanged();
+
+                // Play typing sound every few characters
+                if (sfxEnabled && soundCounter++ % 3 == 0)
+                {
+                    _ = PlaySoundSafe("typing-soft.wav", false, 0.2f);
+                }
 
                 await Task.Delay(typingDelay, token);
             }
@@ -1213,6 +1524,10 @@
         catch (TaskCanceledException)
         {
             // Expected when skipping text
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -1237,6 +1552,9 @@
             return;
         }
 
+        // Play dialogue advance sound
+        await PlaySoundSafe("dialogue-advance.wav", false, 0.4f);
+
         if (currentDialogueIndex < emergencyDialogue.Length - 1)
         {
             canContinue = false;
@@ -1256,7 +1574,16 @@
             StateHasChanged();
 
             await Task.Delay(1000);
+
+            // Stop the alarm when transitioning to clearance input
+            alarmTimer?.Stop();
+            if (sfxEnabled)
+            {
+                await SoundService.StopSFX("alarm-loop.wav");
+            }
+
             showClearanceInput = true;
+            await PlaySoundSafe("ui-click.wav", false, 0.6f);
             StateHasChanged();
         }
     }
@@ -1267,6 +1594,7 @@
         {
             case 2: // Show ARIA
                 showARIA = true;
+                await PlaySoundSafe("aria-activate.wav", false, 0.8f);
                 await Task.Delay(500);
                 ariaVisible = true;
                 break;
@@ -1276,6 +1604,7 @@
                 statusClass = "alert";
                 showAlertSystem = true;
                 showARIA = false;
+                await PlaySoundSafe("alert-warning.wav", false, 0.9f);
                 await Task.Delay(300);
                 alertVisible = true;
                 break;
@@ -1283,23 +1612,51 @@
             case 5: // Critical alert
                 statusText = "CRITICAL THREAT";
                 statusClass = "critical";
+                await PlaySoundSafe("alert-critical.wav", false, 1.0f);
                 break;
 
             case 9: // Self-destruct activated
                 showCountdown = true;
+                await PlaySoundSafe("alert-critical.wav", false, 1.0f);
                 await Task.Delay(300);
                 countdownVisible = true;
+
+                // Start alarm sound loop
+                if (sfxEnabled)
+                {
+                    await PlaySoundSafe("alarm-loop.wav", true, 0.6f);
+                    alarmTimer?.Start();
+                }
                 break;
         }
     }
 
+    private async void OnAlarmTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        // Update countdown display and play alarm beeps
+        await InvokeAsync(async () =>
+        {
+            if (sfxEnabled && showCountdown)
+            {
+                await PlaySoundSafe("system-beep.wav", false, 0.3f);
+            }
+        });
+    }
+
     private async Task ValidateClearance()
     {
+        await PlaySoundSafe("keypress.wav", false, 0.5f);
+
         if (clearanceCode.ToUpper() == CORRECT_CODE)
         {
-            // Correct code - redirect to next page
-            // For now, we'll just show success
+            // Correct code
             inputError = false;
+            await PlaySoundSafe("access-granted.wav", false, 1.0f);
+
+            // Stop alarm
+            alarmTimer?.Stop();
+            await SoundService.StopSFX("alarm-loop.wav");
+
             // TODO: Navigate to next game section
             Console.WriteLine("Access granted! Proceeding to first puzzle...");
         }
@@ -1308,12 +1665,21 @@
             // Wrong code
             inputError = true;
             clearanceCode = "";
+            await PlaySoundSafe("access-denied.wav", false, 0.8f);
             StateHasChanged();
 
             // Clear error after 3 seconds
             await Task.Delay(3000);
             inputError = false;
             StateHasChanged();
+        }
+    }
+
+    private async Task OnInputChange(ChangeEventArgs e)
+    {
+        if (e.Value?.ToString()?.Length > 0)
+        {
+            await PlaySoundSafe("keypress.wav", false, 0.3f);
         }
     }
 
@@ -1325,9 +1691,21 @@
         }
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
         typingCts?.Cancel();
         typingCts?.Dispose();
+        alarmTimer?.Stop();
+        alarmTimer?.Dispose();
+
+        // Clean up sound service
+        try
+        {
+            await SoundService.StopAllSounds();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to stop sounds during disposal: {ex.Message}");
+        }
     }
 }
