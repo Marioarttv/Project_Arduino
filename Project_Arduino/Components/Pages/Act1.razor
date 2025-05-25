@@ -1352,39 +1352,22 @@
         countdownTimer.Elapsed += OnCountdownTick;
         countdownTimer.Start();
 
-        // Auto-start the mission briefing
+        // Show UI immediately
+        headerVisible = true;
+        ariaVisible = true;
+        dialogueSectionVisible = true;
+        dialogueVisible = true;
+        StateHasChanged();
+
+        // Start background music and first dialogue
         _ = Task.Run(async () =>
         {
-            await Task.Delay(200); // Reduced from 500ms
-
-            // Show mission header
-            await InvokeAsync(() =>
-            {
-                headerVisible = true;
-                StateHasChanged();
-            });
-
-            await Task.Delay(400); // Reduced from 1000ms
-
-            // Show ARIA and start background music
             await InvokeAsync(async () =>
             {
-                ariaVisible = true;
                 await StartBackgroundMusic();
-                StateHasChanged();
             });
 
-            await Task.Delay(400); // Reduced from 1000ms
-
-            // Show dialogue box and start first dialogue
-            await InvokeAsync(() =>
-            {
-                dialogueSectionVisible = true;
-                dialogueVisible = true;
-                StateHasChanged();
-            });
-
-            await Task.Delay(300); // Reduced from 800ms
+            await Task.Delay(500); // Small delay for music to start
 
             await InvokeAsync(async () =>
             {
