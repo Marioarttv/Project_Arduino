@@ -255,12 +255,10 @@
                     <div class="success-header">
                         <div class="success-icon">✓</div>
                         <div class="success-title">TRANSMISSION DECODED</div>
-                        <div class="success-subtitle">Dr. Vasquez's final message revealed</div>
                     </div>
 
                     <!-- Message Display -->
                     <div class="decoded-message">
-                        <div class="message-header">DECODED MESSAGE:</div>
                         <div class="message-content">
                             "ARIA DAUGHTER STOP HYPERDRIVE CORE NEEDS MANUAL OVERRIDE STOP MY OFFICE HOLDS THE KEY STOP LIVE FOR BOTH OF US STOP"
                         </div>
@@ -276,21 +274,7 @@
                         </div>
                         <div class="emotional-text">
                             <p class="emotion-line">"Daughter... he called me his daughter."</p>
-                            <p class="emotion-line">"I always wondered why he cared so much about my development..."</p>
                             <p class="emotion-line">"His office holds the key to the Hyperdrive override."</p>
-                            <p class="emotion-line">"'Live for both of us...' - He knew this day would come."</p>
-                        </div>
-                    </div>
-
-                    <!-- Mission Update -->
-                    <div class="mission-update">
-                        <div class="update-header">MISSION OBJECTIVES UPDATED</div>
-                        <div class="objectives-list">
-                            <div class="objective completed">✓ Bypass Security Office A-2</div>
-                            <div class="objective completed">✓ Decode Dr. Vasquez's transmission</div>
-                            <div class="objective active">→ Locate Research Lab B-1 (Dr. Vasquez's Office)</div>
-                            <div class="objective pending">○ Find Hyperdrive override key</div>
-                            <div class="objective pending">○ Reach Engineering Deck C</div>
                         </div>
                     </div>
 
@@ -298,7 +282,6 @@
                     <div class="continue-actions">
                         <button class="continue-mission-button" @onclick="ContinueToNextAct">
                             <span class="button-text">PROCEED TO DR. VASQUEZ'S OFFICE</span>
-                            <div class="button-subtitle">Research Lab B-1 - Find the Override Key</div>
                             <div class="button-glow"></div>
                         </button>
                     </div>
@@ -1382,10 +1365,11 @@
 
     .success-header {
         margin-bottom: 2rem;
+        text-align: center;
     }
 
     .success-icon {
-        font-size: 3rem;
+        font-size: 4rem;
         color: #00ff88;
         margin-bottom: 1rem;
         text-shadow: 0 0 20px #00ff88;
@@ -1393,40 +1377,27 @@
     }
 
     .success-title {
-        font-size: 2rem;
+        font-size: 2.5rem;
         font-weight: bold;
         color: #00ff88;
-        margin-bottom: 0.5rem;
         letter-spacing: 2px;
-    }
-
-    .success-subtitle {
-        font-size: 1rem;
-        color: #888;
-        letter-spacing: 1px;
     }
 
     .decoded-message {
         margin-bottom: 2rem;
-        padding: 1.5rem;
+        padding: 2rem;
         background: rgba(0, 0, 0, 0.3);
         border-radius: 12px;
         border: 1px solid rgba(0, 245, 255, 0.3);
-    }
-
-    .message-header {
-        font-weight: bold;
-        color: #00f5ff;
-        margin-bottom: 1rem;
-        font-size: 1.1rem;
-        letter-spacing: 1px;
+        text-align: center;
     }
 
     .message-content {
-        font-size: 1.1rem;
+        font-size: 1.3rem;
         color: #fff;
-        line-height: 1.5;
+        line-height: 1.6;
         font-style: italic;
+        font-weight: bold;
     }
 
     .aria-response {
@@ -1474,58 +1445,16 @@
     }
 
     .emotional-text {
-        text-align: left;
-    }
-
-    .emotion-line {
-        margin-bottom: 0.8rem;
-        color: #f8fafc;
-        font-size: 1rem;
-        line-height: 1.4;
-        font-style: italic;
-    }
-
-    .mission-update {
-        margin-bottom: 2rem;
-        padding: 1.5rem;
-        background: rgba(0, 0, 0, 0.3);
-        border-radius: 12px;
-        border: 1px solid rgba(0, 245, 255, 0.3);
-    }
-
-    .update-header {
-        font-weight: bold;
-        color: #00f5ff;
-        margin-bottom: 1rem;
-        font-size: 1.1rem;
-        letter-spacing: 1px;
         text-align: center;
     }
 
-    .objectives-list {
-        text-align: left;
+    .emotion-line {
+        margin-bottom: 1rem;
+        color: #f8fafc;
+        font-size: 1.1rem;
+        line-height: 1.4;
+        font-style: italic;
     }
-
-    .objective {
-        padding: 0.5rem 0;
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-        .objective.completed {
-            color: #00ff88;
-        }
-
-        .objective.active {
-            color: #00f5ff;
-            font-weight: bold;
-        }
-
-        .objective.pending {
-            color: #888;
-        }
 
     .continue-actions {
         text-align: center;
@@ -1534,12 +1463,12 @@
     .continue-mission-button {
         background: linear-gradient(135deg, #00ff88, #00cc66);
         border: none;
-        padding: 1.5rem 2.5rem;
+        padding: 1.5rem 3rem;
         border-radius: 30px;
         color: #000;
         font-family: 'Courier New', monospace;
         font-weight: bold;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         cursor: pointer;
         transition: all 0.3s ease;
         letter-spacing: 1px;
@@ -1720,8 +1649,20 @@
             margin: 0 1rem;
         }
 
+        .success-title {
+            font-size: 1.8rem;
+        }
+
+        .success-icon {
+            font-size: 3rem;
+        }
+
+        .message-content {
+            font-size: 1.1rem;
+        }
+
         .continue-mission-button {
-            padding: 1rem 1.5rem;
+            padding: 1rem 2rem;
             font-size: 1rem;
         }
 
@@ -2001,7 +1942,7 @@
 
         // Show morse interface
         showMorseInterface = true;
-        await PlaySoundSafe("startup-sequence.wav", false, 0.6f);
+        
         StateHasChanged();
     }
 

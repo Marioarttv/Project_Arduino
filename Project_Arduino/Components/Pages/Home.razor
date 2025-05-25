@@ -1882,7 +1882,7 @@
                 // Play typing sound every few characters
                 if (sfxEnabled && soundCounter++ % 3 == 0)
                 {
-                    _ = PlaySoundSafe("typing-soft.wav", false, 0.2f);
+                    _ = PlaySoundSafe("typing-soft.wav", false, 0.05f);
                 }
 
                 await Task.Delay(typingDelay, token);
