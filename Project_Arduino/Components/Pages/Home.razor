@@ -1310,8 +1310,7 @@
     "keypress.wav",            // Keypress sounds
     "success.wav",      // Success sound
     "error.wav",       // Error sound
-    "startup-sequence.wav"     //Adventure Startup sound
-    };
+    "startup-sequence.wav"     // Page load sound
 };
 
     // Dialogue content
@@ -1416,7 +1415,7 @@
     {
         try
         {
-            await SoundService.PlayBackgroundMusic("space-ambience.mp3", loop: true, volume: 0.3f);
+            await SoundService.PlayBackgroundMusic("space-ambience.wav", loop: true, volume: 0.3f);
             backgroundMusicPlaying = true;
             StateHasChanged();
         }
@@ -1652,7 +1651,7 @@
         {
             // Correct code
             inputError = false;
-            await PlaySoundSafe("access-granted.wav", false, 1.0f);
+            await PlaySoundSafe("success.wav", false, 1.0f);
 
             // Stop alarm
             alarmTimer?.Stop();
@@ -1666,7 +1665,7 @@
             // Wrong code
             inputError = true;
             clearanceCode = "";
-            await PlaySoundSafe("access-denied.wav", false, 0.8f);
+            await PlaySoundSafe("error.wav", false, 0.8f);
             StateHasChanged();
 
             // Clear error after 3 seconds
@@ -1677,7 +1676,7 @@
     }
 
     private async Task OnInputChange(ChangeEventArgs e)
-    {
+    {f
         if (e.Value?.ToString()?.Length > 0)
         {
             await PlaySoundSafe("keypress.wav", false, 0.3f);
