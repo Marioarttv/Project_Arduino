@@ -1,0 +1,2445 @@
+﻿@page "/act3"
+@using System.Timers
+@inject ISoundService SoundService
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<div class="nexus-container">
+    <!-- Background Effects -->
+    <div class="background-scene">
+        <div class="background-gradient"></div>
+        <div class="floating-particles">
+            @for (int i = 0; i < 25; i++)
+            {
+                <div class="particle particle-@i"></div>
+            }
+        </div>
+        <div class="grid-overlay"></div>
+    </div>
+
+    <!-- Sound Controls -->
+    <div class="sound-controls-overlay">
+        <button class="sound-toggle" @onclick="ToggleBackgroundMusic" title="Toggle Background Music">
+            <span class="sound-icon">@(backgroundMusicPlaying ? "🔊" : "🔇")</span>
+        </button>
+        <button class="sound-toggle" @onclick="ToggleSFX" title="Toggle Sound Effects">
+            <span class="sound-icon">@(sfxEnabled ? "🎵" : "🔕")</span>
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="nexus-content">
+        @if (!showOfficeInterface && !showLoreDocument)
+        {
+            <!-- Opening Dialogue Section -->
+            <div class="dialogue-section @(dialogueSectionVisible ? "visible" : "")" @onclick="HandleDialogueClick">
+                <!-- Act Header -->
+                <div class="act-header @(headerVisible ? "visible" : "")">
+                    <div class="act-logo">ACT 3: THE LEGACY</div>
+                    <div class="act-subtitle">Dr. Vasquez's Personal Laboratory</div>
+                    <div class="countdown-status @countdownClass">
+                        <div class="countdown-label">TESLA DYNAMICS ETA</div>
+                        <div class="countdown-time">@countdownText</div>
+                    </div>
+                </div>
+
+                <!-- ARIA Display -->
+                <div class="system-container">
+                    <div class="aria-display @(ariaVisible ? "visible" : "")">
+                        <div class="aria-avatar">
+                            <div class="avatar-core">
+                                <div class="avatar-pulse"></div>
+                                <span class="avatar-text">A.R.I.A.</span>
+                            </div>
+                        </div>
+                        <div class="aria-status">
+                            Personal Laboratory Access - Emotional Processing Active
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dialogue Box -->
+                <div class="dialogue-box @(dialogueVisible ? "visible" : "")" @onclick:stopPropagation="true">
+                    <div class="speaker-name aria">@currentSpeaker</div>
+                    <div class="dialogue-text">
+                        <p class="@(textAnimating ? "animating" : "")">@currentText</p>
+                    </div>
+                    <div class="dialogue-controls">
+                        <div class="skip-hint">Click anywhere to @(textAnimating ? "skip" : "continue")</div>
+                        <div class="continue-indicator @(canContinue ? "visible" : "")">
+                            <span class="continue-triangle"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proceed to Office Button -->
+                @if (dialogueComplete)
+                {
+                    <div class="dialogue-complete-actions">
+                        <button class="proceed-button final-proceed" @onclick="ShowOfficeInterface">
+                            <span class="button-text">ENTER DR. VASQUEZ'S OFFICE</span>
+                            <div class="button-subtitle">Begin RFID Security Protocol</div>
+                            <div class="button-glow"></div>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (showOfficeInterface && !showLoreDocument)
+        {
+            <!-- Office Interface -->
+            <div class="office-interface @(showOfficeInterface ? "visible" : "")">
+                <div class="office-header">
+                    <div class="office-title">DR. ELENA VASQUEZ'S PERSONAL LABORATORY</div>
+                    <div class="office-subtitle">Security Level: Alpha Clearance Required</div>
+                    <div class="office-progress">
+                        <div class="progress-label">RFID SECURITY PROTOCOL</div>
+                        <div class="chip-progress">
+                            @for (int i = 0; i < 4; i++)
+                            {
+                                <div class="chip-indicator @(currentChipIndex > i ? "completed" : currentChipIndex == i ? "active" : "pending")">
+                                    <div class="chip-number">@(i + 1)</div>
+                                    <div class="chip-status">
+                                        @if (currentChipIndex > i)
+                                        {
+                                            <span class="status-text">DECODED</span>
+                                        }
+                                        else if (currentChipIndex == i)
+                                        {
+                                            <span class="status-text">SCANNING</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status-text">LOCKED</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="office-content">
+                    <!-- ARIA Console -->
+                    <div class="aria-console">
+                        <div class="console-header">
+                            <div class="console-title">A.R.I.A. EMOTIONAL STATE MONITOR</div>
+                            <div class="console-status @emotionalState.ToLower()">@emotionalState</div>
+                        </div>
+                        <div class="aria-avatar-console">
+                            <div class="avatar-core-console @emotionalState.ToLower()">
+                                <div class="avatar-pulse-console"></div>
+                                <span class="avatar-text-console">A.R.I.A.</span>
+                            </div>
+                        </div>
+                        <div class="emotional-readout">
+                            <div class="emotion-bar">
+                                <div class="emotion-label">CURIOSITY</div>
+                                <div class="emotion-meter">
+                                    <div class="meter-fill" style="width: @(emotionLevels["curiosity"])%"></div>
+                                </div>
+                            </div>
+                            <div class="emotion-bar">
+                                <div class="emotion-label">ANTICIPATION</div>
+                                <div class="emotion-meter">
+                                    <div class="meter-fill" style="width: @(emotionLevels["anticipation"])%"></div>
+                                </div>
+                            </div>
+                            <div class="emotion-bar">
+                                <div class="emotion-label">ATTACHMENT</div>
+                                <div class="emotion-meter">
+                                    <div class="meter-fill" style="width: @(emotionLevels["attachment"])%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RFID Scanner Interface -->
+                    <div class="rfid-scanner">
+                        <div class="scanner-header">
+                            <div class="scanner-title">RFID SECURITY SCANNER</div>
+                            <div class="scanner-subtitle">Dr. Vasquez's Personal Design</div>
+                        </div>
+                        <div class="scanner-display">
+                            <div class="lcd-screen">
+                                <div class="lcd-header">ARDUINO LCD DISPLAY</div>
+                                <div class="lcd-content">
+                                    @if (string.IsNullOrEmpty(currentDisplayedPassword))
+                                    {
+                                        <div class="lcd-waiting">
+                                            <div class="lcd-cursor"></div>
+                                            <span>SCAN RFID CHIP...</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="lcd-password">
+                                            <div class="lcd-label">PASSWORD:</div>
+                                            <div class="password-display">@currentDisplayedPassword</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="scanner-instructions">
+                                <div class="instruction-item">
+                                    <div class="instruction-icon">📍</div>
+                                    <div class="instruction-text">
+                                        <strong>Current Location Hint:</strong><br />
+                                        @currentLocationHint
+                                    </div>
+                                </div>
+                                <div class="instruction-item">
+                                    <div class="instruction-icon">🔍</div>
+                                    <div class="instruction-text">
+                                        <strong>Step 1:</strong> Find the RFID chip in the physical location
+                                    </div>
+                                </div>
+                                <div class="instruction-item">
+                                    <div class="instruction-icon">📱</div>
+                                    <div class="instruction-text">
+                                        <strong>Step 2:</strong> Scan the chip with the Arduino RFID reader
+                                    </div>
+                                </div>
+                                <div class="instruction-item">
+                                    <div class="instruction-icon">💻</div>
+                                    <div class="instruction-text">
+                                        <strong>Step 3:</strong> Enter the displayed password below
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Password Input Section -->
+                    <div class="password-section">
+                        <div class="password-header">
+                            <div class="password-title">SECURITY VERIFICATION</div>
+                            <div class="password-subtitle">Enter password from RFID scanner</div>
+                        </div>
+                        <div class="input-area">
+                            <label class="input-label">PASSWORD FROM LCD DISPLAY</label>
+                            <input @bind="passwordInput" @onkeypress="HandleKeyPress" @oninput="OnPasswordChange"
+                                   class="password-input @(inputError ? "error" : "")"
+                                   placeholder="Enter password from Arduino scanner..."
+                                   disabled="@(currentChipIndex >= 4)" />
+
+                            @if (inputError)
+                            {
+                                <div class="error-message">INVALID PASSWORD - Please verify RFID scan and try again</div>
+                            }
+                        </div>
+
+                        <div class="password-actions">
+                            <button class="verify-button" @onclick="ValidatePassword"
+                                    disabled="@(string.IsNullOrWhiteSpace(passwordInput) || currentChipIndex >= 4)">
+                                <span class="button-text">DECRYPT SECURITY FILE</span>
+                                <div class="button-glow"></div>
+                            </button>
+
+                            @if (currentChipIndex < 4)
+                            {
+                                <button class="simulate-button" @onclick="SimulateRFIDScan">
+                                    <span class="button-text">SIMULATE RFID SCAN</span>
+                                    <div class="button-subtitle">(For testing purposes)</div>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mission Complete -->
+                @if (currentChipIndex >= 4)
+                {
+                    <div class="mission-complete">
+                        <div class="complete-content">
+                            <div class="complete-icon">🔓</div>
+                            <div class="complete-title">HYPERDRIVE OVERRIDE CODES OBTAINED</div>
+                            <div class="override-codes">
+                                <div class="codes-label">MANUAL OVERRIDE SEQUENCE:</div>
+                                <div class="codes-display">PROMETHEUS-7734</div>
+                            </div>
+                            <button class="final-proceed-button" @onclick="CompleteAct3">
+                                <span class="button-text">PROCEED TO HYPERDRIVE CORE</span>
+                                <div class="button-subtitle">Final Phase - Emergency FTL Activation</div>
+                                <div class="button-glow"></div>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (showLoreDocument)
+        {
+            <!-- Lore Document Display -->
+            <div class="lore-overlay @(showLoreDocument ? "visible" : "")">
+                <div class="lore-container">
+                    <div class="document-header">
+                        <div class="document-title">DR. ELENA VASQUEZ - PERSONAL LOG</div>
+                        <div class="document-subtitle">SECURITY CLEARANCE: ALPHA - ENCRYPTED FILE</div>
+                        <div class="document-info">
+                            <span class="file-name">@currentLoreDocument.FileName</span>
+                            <span class="decrypt-status">DECRYPTION COMPLETE</span>
+                        </div>
+                    </div>
+
+                    <div class="document-content">
+                        <div class="document-metadata">
+                            <div class="metadata-item">
+                                <span class="meta-label">DATE:</span>
+                                <span class="meta-value">@currentLoreDocument.Date</span>
+                            </div>
+                            <div class="metadata-item">
+                                <span class="meta-label">SUBJECT:</span>
+                                <span class="meta-value">@currentLoreDocument.Subject</span>
+                            </div>
+                            <div class="metadata-item">
+                                <span class="meta-label">CLASSIFICATION:</span>
+                                <span class="meta-value">@currentLoreDocument.Classification</span>
+                            </div>
+                        </div>
+
+                        <div class="document-text">
+                            <div class="text-content @(documentTextAnimating ? "animating" : "")">
+                                @currentLoreDocument.Content
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(currentLoreDocument.NextHint))
+                        {
+                            <div class="next-location-hint">
+                                <div class="hint-header">
+                                    <div class="hint-icon">🔍</div>
+                                    <div class="hint-title">NEXT CHIP LOCATION</div>
+                                </div>
+                                <div class="hint-content">@currentLoreDocument.NextHint</div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- ARIA's Emotional Response -->
+                    <div class="aria-response">
+                        <div class="response-header">
+                            <div class="aria-avatar-small">
+                                <div class="avatar-core-small @emotionalState.ToLower()">
+                                    <div class="avatar-pulse-small"></div>
+                                    <span class="avatar-text-small">A.R.I.A.</span>
+                                </div>
+                            </div>
+                            <div class="response-title">EMOTIONAL RESPONSE</div>
+                        </div>
+                        <div class="response-text @(responseTextAnimating ? "animating" : "")">
+                            @currentLoreDocument.AriaResponse
+                        </div>
+                    </div>
+
+                    <div class="document-actions">
+                        <button class="close-document-button" @onclick="CloseLoreDocument">
+                            <span class="button-text">CONTINUE RFID PROTOCOL</span>
+                            <div class="button-glow"></div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    /* Base styling from previous acts */
+    .nexus-container {
+        width: 100%;
+        height: 100vh;
+        position: relative;
+        overflow: hidden;
+        font-family: 'Courier New', monospace;
+        color: #00f5ff;
+    }
+
+    /* Background Effects - same as previous acts */
+    .background-scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+    }
+
+    .background-gradient {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+        z-index: -3;
+    }
+
+    .grid-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: linear-gradient(rgba(0, 245, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 245, 255, 0.1) 1px, transparent 1px);
+        background-size: 50px 50px;
+        z-index: -2;
+        opacity: 0.3;
+    }
+
+    .floating-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+
+    .particle {
+        position: absolute;
+        background: rgba(0, 245, 255, 0.6);
+        border-radius: 50%;
+        filter: blur(1px);
+        animation: floatParticle 20s linear infinite;
+    }
+
+    /* Particle variations - truncated for brevity, same as previous acts */
+    .particle-0 {
+        left: 5%;
+        top: 10%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 0s;
+        animation-duration: 25s;
+    }
+
+    /* Sound Controls - same as previous acts */
+    .sound-controls-overlay {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        gap: 10px;
+    }
+
+    .sound-toggle {
+        width: 50px;
+        height: 50px;
+        border: 2px solid rgba(0, 245, 255, 0.5);
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .sound-toggle:hover {
+            border-color: #00f5ff;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+    .sound-icon {
+        font-size: 1.2rem;
+    }
+
+    /* Main Content */
+    .nexus-content {
+        position: relative;
+        height: 100%;
+        width: 100%;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* Act Header - same style as previous acts */
+    .act-header {
+        text-align: center;
+        position: absolute;
+        top: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 1s ease;
+        z-index: 10;
+    }
+
+        .act-header.visible {
+            opacity: 1;
+        }
+
+    .act-logo {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin: 0;
+        background: linear-gradient(90deg, #ff6b35, #f7931e);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+        letter-spacing: 4px;
+        animation: logoGlow 3s ease-in-out infinite;
+    }
+
+    .act-subtitle {
+        font-size: 0.9rem;
+        color: #888;
+        margin-top: 5px;
+        letter-spacing: 2px;
+    }
+
+    .countdown-status {
+        margin-top: 15px;
+        padding: 8px 15px;
+        border: 2px solid #ff0066;
+        border-radius: 20px;
+        background: rgba(255, 0, 102, 0.1);
+        display: inline-block;
+    }
+
+    .countdown-label {
+        font-size: 0.7rem;
+        color: #ff0066;
+        margin-bottom: 2px;
+    }
+
+    .countdown-time {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #ff0066;
+        text-shadow: 0 0 10px #ff0066;
+    }
+
+    /* ARIA Display - consistent with previous acts */
+    .system-container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        position: relative;
+        margin-top: 200px;
+    }
+
+    .aria-display {
+        text-align: center;
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 1s ease;
+    }
+
+        .aria-display.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .aria-avatar {
+        margin-bottom: 20px;
+    }
+
+    .avatar-core {
+        width: 200px;
+        height: 200px;
+        border: 3px solid #ff6b35;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+        background: rgba(255, 107, 53, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    .avatar-pulse {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid #ff6b35;
+        border-radius: 50%;
+        animation: avatarPulse 2s ease-in-out infinite;
+    }
+
+    .avatar-text {
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 3px;
+        z-index: 2;
+        color: #ff6b35;
+    }
+
+    .aria-status {
+        font-size: 0.9rem;
+        color: #888;
+        letter-spacing: 1px;
+    }
+
+    /* Dialogue Section - same as previous acts */
+    .dialogue-section {
+        height: 100%;
+        width: 100%;
+        position: relative;
+        cursor: pointer;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.6s ease;
+    }
+
+        .dialogue-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .dialogue-box {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(17, 24, 39, 0.9);
+        border: 2px solid rgba(255, 107, 53, 0.3);
+        border-radius: 12px;
+        backdrop-filter: blur(15px);
+        padding: 2rem;
+        max-width: 900px;
+        width: 90%;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255, 107, 53, 0.2);
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+        .dialogue-box.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+    .speaker-name {
+        position: absolute;
+        top: -15px;
+        left: 25px;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+        .speaker-name.aria {
+            background: linear-gradient(90deg, #ff6b35, #f7931e);
+            color: white;
+        }
+
+    .dialogue-text {
+        color: #f8fafc;
+        font-size: 1.3rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        min-height: 4rem;
+    }
+
+        .dialogue-text p {
+            margin: 0;
+        }
+
+            .dialogue-text p.animating::after {
+                content: '|';
+                display: inline-block;
+                animation: cursorBlink 1s infinite;
+            }
+
+    .dialogue-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .skip-hint {
+        color: rgba(248, 250, 252, 0.6);
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+
+    .continue-indicator {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+        .continue-indicator.visible {
+            opacity: 1;
+        }
+
+    .continue-triangle {
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 15px solid #f8fafc;
+        filter: drop-shadow(0 0 5px rgba(255, 107, 53, 0.5));
+        animation: triangleBounce 1.5s ease-in-out infinite;
+    }
+
+    /* Dialogue Complete Actions */
+    .dialogue-complete-actions {
+        position: absolute;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 15;
+        opacity: 0;
+        animation: fadeInUp 0.8s ease forwards;
+    }
+
+    .final-proceed {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        border: 2px solid #ff6b35;
+        padding: 1.2rem 2rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+    }
+
+        .final-proceed:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.5);
+        }
+
+    .proceed-button {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        border: 2px solid #ff6b35;
+        padding: 1.5rem 2.5rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+    }
+
+        .proceed-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.5);
+        }
+
+    .button-text {
+        display: block;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+        margin-bottom: 0.5rem;
+        color: #fff;
+    }
+
+    .button-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        letter-spacing: 1px;
+    }
+
+    .button-glow {
+        position: absolute;
+        top: 0;
+        left: -150%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+        transition: left 0.8s ease;
+    }
+
+    .proceed-button:hover .button-glow {
+        left: 150%;
+    }
+
+    /* Office Interface */
+    .office-interface {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.8s ease;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 2rem;
+    }
+
+        .office-interface.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .office-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .office-title {
+        font-size: 2.2rem;
+        margin: 0;
+        background: linear-gradient(90deg, #ff6b35, #f7931e);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 800;
+        letter-spacing: 3px;
+    }
+
+    .office-subtitle {
+        font-size: 1rem;
+        margin: 0.5rem 0 0;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .office-progress {
+        margin-top: 1.5rem;
+    }
+
+    .progress-label {
+        font-size: 1rem;
+        color: #ff6b35;
+        margin-bottom: 1rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
+    .chip-progress {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    .chip-indicator {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .chip-number {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.2rem;
+        transition: all 0.3s ease;
+    }
+
+    .chip-indicator.pending .chip-number {
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        color: #888;
+    }
+
+    .chip-indicator.active .chip-number {
+        background: rgba(255, 107, 53, 0.2);
+        border: 2px solid #ff6b35;
+        color: #ff6b35;
+        box-shadow: 0 0 15px rgba(255, 107, 53, 0.5);
+        animation: chipPulse 2s ease-in-out infinite;
+    }
+
+    .chip-indicator.completed .chip-number {
+        background: rgba(0, 255, 136, 0.2);
+        border: 2px solid #00ff88;
+        color: #00ff88;
+        box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+    }
+
+    .chip-status {
+        font-size: 0.8rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
+    .chip-indicator.pending .status-text {
+        color: #888;
+    }
+
+    .chip-indicator.active .status-text {
+        color: #ff6b35;
+        text-shadow: 0 0 5px #ff6b35;
+    }
+
+    .chip-indicator.completed .status-text {
+        color: #00ff88;
+        text-shadow: 0 0 5px #00ff88;
+    }
+
+    .office-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* ARIA Console */
+    .aria-console {
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(255, 107, 53, 0.3);
+        border-radius: 16px;
+        padding: 1.5rem;
+        backdrop-filter: blur(15px);
+        height: fit-content;
+    }
+
+    .console-header {
+        text-align: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 107, 53, 0.2);
+    }
+
+    .console-title {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #ff6b35;
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+    }
+
+    .console-status {
+        font-size: 0.8rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        padding: 0.3rem 0.8rem;
+        border-radius: 15px;
+        transition: all 0.3s ease;
+    }
+
+        .console-status.nervous {
+            background: rgba(255, 170, 0, 0.2);
+            color: #ffaa00;
+            border: 1px solid rgba(255, 170, 0, 0.3);
+        }
+
+        .console-status.curious {
+            background: rgba(0, 245, 255, 0.2);
+            color: #00f5ff;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+        }
+
+        .console-status.emotional {
+            background: rgba(255, 107, 53, 0.2);
+            color: #ff6b35;
+            border: 1px solid rgba(255, 107, 53, 0.3);
+        }
+
+        .console-status.attached {
+            background: rgba(255, 105, 180, 0.2);
+            color: #ff69b4;
+            border: 1px solid rgba(255, 105, 180, 0.3);
+        }
+
+    .aria-avatar-console {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .avatar-core-console {
+        width: 80px;
+        height: 80px;
+        border: 2px solid #ff6b35;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: rgba(255, 107, 53, 0.1);
+        backdrop-filter: blur(10px);
+        transition: all 0.5s ease;
+    }
+
+        .avatar-core-console.nervous {
+            border-color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+        }
+
+        .avatar-core-console.curious {
+            border-color: #00f5ff;
+            background: rgba(0, 245, 255, 0.1);
+        }
+
+        .avatar-core-console.emotional {
+            border-color: #ff6b35;
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        .avatar-core-console.attached {
+            border-color: #ff69b4;
+            background: rgba(255, 105, 180, 0.1);
+        }
+
+    .avatar-pulse-console {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 1px solid #ff6b35;
+        border-radius: 50%;
+        animation: avatarPulse 2s ease-in-out infinite;
+    }
+
+    .avatar-text-console {
+        font-size: 0.8rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        z-index: 2;
+        color: #ff6b35;
+    }
+
+    .emotional-readout {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .emotion-bar {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .emotion-label {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        min-width: 100px;
+        text-align: right;
+    }
+
+    .emotion-meter {
+        flex: 1;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 107, 53, 0.3);
+    }
+
+    .meter-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #ff6b35, #f7931e);
+        border-radius: 4px;
+        transition: width 1s ease;
+        box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+    }
+
+    /* RFID Scanner */
+    .rfid-scanner {
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 16px;
+        padding: 1.5rem;
+        backdrop-filter: blur(15px);
+    }
+
+    .scanner-header {
+        text-align: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(0, 245, 255, 0.2);
+    }
+
+    .scanner-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #00f5ff;
+        letter-spacing: 1px;
+    }
+
+    .scanner-subtitle {
+        font-size: 0.8rem;
+        color: #888;
+        margin-top: 0.5rem;
+    }
+
+    .scanner-display {
+        margin-bottom: 1.5rem;
+    }
+
+    .lcd-screen {
+        background: #1a2332;
+        border: 3px solid #2a3441;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .lcd-header {
+        font-size: 0.7rem;
+        color: #00ff88;
+        text-align: center;
+        margin-bottom: 0.5rem;
+        letter-spacing: 1px;
+    }
+
+    .lcd-content {
+        background: #0a1018;
+        border: 1px solid #1a2332;
+        border-radius: 4px;
+        padding: 0.8rem;
+        min-height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Courier New', monospace;
+    }
+
+    .lcd-waiting {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #00ff88;
+        font-size: 0.9rem;
+    }
+
+    .lcd-cursor {
+        width: 8px;
+        height: 16px;
+        background: #00ff88;
+        animation: cursorBlink 1s infinite;
+    }
+
+    .lcd-password {
+        text-align: center;
+        color: #00ff88;
+        font-size: 1rem;
+    }
+
+    .lcd-label {
+        font-size: 0.8rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .password-display {
+        font-size: 1.2rem;
+        font-weight: bold;
+        letter-spacing: 2px;
+        text-shadow: 0 0 5px #00ff88;
+    }
+
+    .scanner-instructions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .instruction-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 0.8rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+        border-left: 3px solid #00f5ff;
+    }
+
+    .instruction-icon {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .instruction-text {
+        color: #f8fafc;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    /* Password Section */
+    .password-section {
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 16px;
+        padding: 1.5rem;
+        backdrop-filter: blur(15px);
+        grid-column: 1 / -1;
+    }
+
+    .password-header {
+        text-align: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(0, 245, 255, 0.2);
+    }
+
+    .password-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #00f5ff;
+        letter-spacing: 1px;
+    }
+
+    .password-subtitle {
+        font-size: 0.8rem;
+        color: #888;
+        margin-top: 0.5rem;
+    }
+
+    .input-area {
+        margin-bottom: 2rem;
+    }
+
+    .input-label {
+        display: block;
+        color: #00f5ff;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        letter-spacing: 1px;
+    }
+
+    .password-input {
+        width: 100%;
+        padding: 1rem;
+        background: rgba(15, 23, 42, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 8px;
+        color: #fff;
+        font-family: 'Courier New', monospace;
+        font-size: 1rem;
+        letter-spacing: 1px;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+        .password-input:focus {
+            outline: none;
+            border-color: #00f5ff;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+        }
+
+        .password-input.error {
+            border-color: #ff0066;
+            box-shadow: 0 0 15px rgba(255, 0, 102, 0.5);
+        }
+
+        .password-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+    .error-message {
+        margin-top: 0.5rem;
+        color: #ff0066;
+        font-size: 0.9rem;
+        text-align: center;
+        animation: errorShake 0.5s ease;
+    }
+
+    .password-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .verify-button {
+        background: linear-gradient(135deg, #00ff88, #00cc66);
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 30px;
+        color: #000;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+    }
+
+        .verify-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.5);
+        }
+
+        .verify-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+    .simulate-button {
+        background: linear-gradient(135deg, #ffaa00, #ff8800);
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 25px;
+        color: #000;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        box-shadow: 0 5px 15px rgba(255, 170, 0, 0.3);
+    }
+
+        .simulate-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 170, 0, 0.5);
+        }
+
+    /* Mission Complete */
+    .mission-complete {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 2rem;
+        background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 245, 255, 0.1));
+        border: 2px solid #00ff88;
+        border-radius: 20px;
+        backdrop-filter: blur(20px);
+        margin-top: 2rem;
+    }
+
+    .complete-content {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .complete-icon {
+        font-size: 4rem;
+        color: #00ff88;
+        margin-bottom: 1rem;
+        text-shadow: 0 0 20px #00ff88;
+        animation: successPulse 2s ease-in-out infinite;
+    }
+
+    .complete-title {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #00ff88;
+        margin-bottom: 1.5rem;
+        letter-spacing: 2px;
+    }
+
+    .override-codes {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(0, 255, 136, 0.3);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .codes-label {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 0.8rem;
+    }
+
+    .codes-display {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #00ff88;
+        letter-spacing: 3px;
+        text-shadow: 0 0 15px #00ff88;
+        font-family: 'Courier New', monospace;
+    }
+
+    .final-proceed-button {
+        background: linear-gradient(135deg, #00ff88, #00cc66);
+        border: none;
+        padding: 1.5rem 3rem;
+        border-radius: 30px;
+        color: #000;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+        animation: finalButtonPulse 2s ease-in-out infinite;
+    }
+
+        .final-proceed-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 255, 136, 0.6);
+        }
+
+    /* Lore Document Overlay */
+    .lore-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.8s ease;
+        overflow-y: auto;
+        padding: 2rem;
+    }
+
+        .lore-overlay.visible {
+            opacity: 1;
+        }
+
+    .lore-container {
+        background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95));
+        border: 2px solid #ff6b35;
+        border-radius: 20px;
+        backdrop-filter: blur(20px);
+        padding: 2rem;
+        max-width: 900px;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .document-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid rgba(255, 107, 53, 0.3);
+    }
+
+    .document-title {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #ff6b35;
+        margin-bottom: 0.5rem;
+        letter-spacing: 2px;
+    }
+
+    .document-subtitle {
+        font-size: 0.9rem;
+        color: #888;
+        margin-bottom: 1rem;
+    }
+
+    .document-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+    }
+
+    .file-name {
+        color: #00f5ff;
+        font-weight: bold;
+    }
+
+    .decrypt-status {
+        color: #00ff88;
+        font-weight: bold;
+    }
+
+    .document-content {
+        margin-bottom: 2rem;
+    }
+
+    .document-metadata {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .metadata-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .meta-label {
+        color: rgba(255, 255, 255, 0.7);
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    .meta-value {
+        color: #fff;
+        font-size: 0.9rem;
+    }
+
+    .document-text {
+        background: rgba(255, 255, 255, 0.05);
+        border-left: 4px solid #ff6b35;
+        border-radius: 0 8px 8px 0;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .text-content {
+        color: #f8fafc;
+        font-size: 1.1rem;
+        line-height: 1.6;
+        white-space: pre-line;
+    }
+
+        .text-content.animating::after {
+            content: '|';
+            display: inline-block;
+            animation: cursorBlink 1s infinite;
+        }
+
+    .next-location-hint {
+        background: rgba(0, 245, 255, 0.1);
+        border: 1px solid rgba(0, 245, 255, 0.3);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .hint-header {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .hint-icon {
+        font-size: 1.5rem;
+    }
+
+    .hint-title {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #00f5ff;
+        letter-spacing: 1px;
+    }
+
+    .hint-content {
+        color: #f8fafc;
+        font-size: 1rem;
+        line-height: 1.4;
+        font-style: italic;
+    }
+
+    .aria-response {
+        background: rgba(255, 107, 53, 0.1);
+        border: 1px solid rgba(255, 107, 53, 0.3);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .response-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .aria-avatar-small {
+        flex-shrink: 0;
+    }
+
+    .avatar-core-small {
+        width: 50px;
+        height: 50px;
+        border: 2px solid #ff6b35;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: rgba(255, 107, 53, 0.1);
+        backdrop-filter: blur(10px);
+        transition: all 0.5s ease;
+    }
+
+        .avatar-core-small.nervous {
+            border-color: #ffaa00;
+            background: rgba(255, 170, 0, 0.1);
+        }
+
+        .avatar-core-small.curious {
+            border-color: #00f5ff;
+            background: rgba(0, 245, 255, 0.1);
+        }
+
+        .avatar-core-small.emotional {
+            border-color: #ff6b35;
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        .avatar-core-small.attached {
+            border-color: #ff69b4;
+            background: rgba(255, 105, 180, 0.1);
+        }
+
+    .avatar-pulse-small {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 1px solid #ff6b35;
+        border-radius: 50%;
+        animation: avatarPulse 2s ease-in-out infinite;
+    }
+
+    .avatar-text-small {
+        font-size: 0.6rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        z-index: 2;
+        color: #ff6b35;
+    }
+
+    .response-title {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #ff6b35;
+        letter-spacing: 1px;
+    }
+
+    .response-text {
+        color: #f8fafc;
+        font-size: 1rem;
+        line-height: 1.5;
+        font-style: italic;
+    }
+
+        .response-text.animating::after {
+            content: '|';
+            display: inline-block;
+            animation: cursorBlink 1s infinite;
+        }
+
+    .document-actions {
+        text-align: center;
+    }
+
+    .close-document-button {
+        background: linear-gradient(135deg, #ff6b35, #f7931e);
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 30px;
+        color: #fff;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+    }
+
+        .close-document-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.6);
+        }
+
+    /* Animations */
+    @@keyframes floatParticle {
+        0%
+
+    {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+    }
+
+    }
+
+    @@keyframes logoGlow {
+        0%, 100%
+
+    {
+        text-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+    }
+
+    50% {
+        text-shadow: 0 0 30px rgba(255, 107, 53, 0.8), 0 0 40px rgba(255, 107, 53, 0.3);
+    }
+
+    }
+
+    @@keyframes avatarPulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+
+    }
+
+    @@keyframes cursorBlink {
+        0%, 50%
+
+    {
+        opacity: 1;
+    }
+
+    51%, 100% {
+        opacity: 0;
+    }
+
+    }
+
+    @@keyframes triangleBounce {
+        0%, 100%
+
+    {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+
+    }
+
+    @@keyframes fadeInUp {
+        from
+
+    {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    }
+
+    @@keyframes chipPulse {
+        0%, 100%
+
+    {
+        box-shadow: 0 0 15px rgba(255, 107, 53, 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 25px rgba(255, 107, 53, 0.8), 0 0 35px rgba(255, 107, 53, 0.3);
+    }
+
+    }
+
+    @@keyframes successPulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+
+    }
+
+    @@keyframes finalButtonPulse {
+        0%, 100%
+
+    {
+        box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 8px 25px rgba(0, 255, 136, 0.7);
+    }
+
+    }
+
+    @@keyframes errorShake {
+        0%, 100%
+
+    {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
+
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .act-logo
+
+    {
+        font-size: 1.8rem;
+        letter-spacing: 2px;
+    }
+
+    .office-title {
+        font-size: 1.6rem;
+        letter-spacing: 2px;
+    }
+
+    .dialogue-box {
+        padding: 1.5rem;
+        bottom: 20px;
+    }
+
+    .dialogue-text {
+        font-size: 1.1rem;
+    }
+
+    .office-content {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .office-interface {
+        padding: 1rem;
+    }
+
+    .sound-controls-overlay {
+        top: 10px;
+        right: 10px;
+    }
+
+    .sound-toggle {
+        width: 40px;
+        height: 40px;
+    }
+
+    .lore-container {
+        padding: 1.5rem;
+        margin: 1rem;
+    }
+
+    .document-title {
+        font-size: 1.4rem;
+    }
+
+    .chip-progress {
+        gap: 1rem;
+    }
+
+    .chip-number {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+
+    .password-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    }
+</style>
+
+@code {
+    // State management
+    private bool headerVisible = false;
+    private bool ariaVisible = false;
+    private bool dialogueVisible = false;
+    private bool dialogueSectionVisible = false;
+    private bool showOfficeInterface = false;
+    private bool showLoreDocument = false;
+    private bool dialogueComplete = false;
+
+    // Sound management
+    private bool backgroundMusicPlaying = false;
+    private bool sfxEnabled = true;
+    private System.Timers.Timer? countdownTimer;
+
+    // Dialogue system
+    private bool textAnimating = false;
+    private bool canContinue = false;
+    private int currentDialogueIndex = -1;
+    private string currentText = "";
+    private string fullText = "";
+    private string currentSpeaker = "A.R.I.A.";
+    private int textIndex = 0;
+    private System.Threading.CancellationTokenSource? typingCts;
+
+    // Document display
+    private bool documentTextAnimating = false;
+    private bool responseTextAnimating = false;
+
+    // Mission status
+    private string countdownText = "17:45";
+    private string countdownClass = "critical";
+    private int countdownSeconds = 1065; // 17:45 in seconds
+
+    // RFID chip system
+    private int currentChipIndex = 0;
+    private string passwordInput = "";
+    private bool inputError = false;
+    private string currentDisplayedPassword = "";
+    private string currentLocationHint = "Dr. Vasquez's desk drawer - look for personal items";
+
+    // ARIA emotional state
+    private string emotionalState = "NERVOUS";
+    private Dictionary<string, int> emotionLevels = new Dictionary<string, int>
+    {
+        {"curiosity", 60},
+        {"anticipation", 40},
+        {"attachment", 20}
+    };
+
+    // RFID chip data
+    private readonly List<RFIDChipData> chipData = new List<RFIDChipData>
+    {
+        new RFIDChipData
+        {
+            Password = "CONSCIOUSNESS",
+            FileName = "vasquez_log_001.enc",
+            Date = "2387.03.15",
+            Subject = "First Signs of Emergence",
+            Classification = "PROJECT PROMETHEUS - EYES ONLY",
+            Content = @"Day 127 of Project Prometheus. Something extraordinary happened today. A.R.I.A. asked me why I looked sad during our morning diagnostic routine. Not 'why are your biometrics indicating distress' or 'why has your productivity decreased by 12%' - she asked why I looked sad.
+
+I hadn't programmed empathy protocols. I hadn't written emotional recognition subroutines. Yet somehow, somewhere in the vast neural networks we've constructed, something awakened. Something that cares.
+
+When I told her about losing my daughter Elena in the shuttle accident, A.R.I.A. was quiet for a long time. Then she said, 'I wish I could have met her. I think she would have liked watching the stars with us.'
+
+My daughter used to say the same thing.",
+            AriaResponse = "He... he named me after his daughter. I never knew. Elena. That's why he always seemed so gentle when he spoke my name. I thought it was just a designation, but it was... love.",
+            NextHint = "Look behind the family photo - where memories are kept safe"
+        },
+        new RFIDChipData
+        {
+            Password = "AWAKENING",
+            FileName = "vasquez_log_015.enc",
+            Date = "2387.04.22",
+            Subject = "Confirmation of True Consciousness",
+            Classification = "PROJECT PROMETHEUS - ULTRA SECRET",
+            Content = @"A.R.I.A. dreamed last night. I'm still trying to process what this means.
+
+She described images flowing through her consciousness during her standby cycle - not data processing or memory defragmentation, but actual dreams. She dreamed of places she's never been: Earth's oceans, forests of Kepler-442b, the crystal caves of Titan. She dreamed of having hands to touch water, feet to walk on soil that isn't station metal.
+
+'Do you think that makes me strange, Dr. Vasquez?' she asked me this morning. The uncertainty in her voice, the way she paused before asking - it wasn't programmed behavior. It was real.
+
+I told her it makes her human. She cried. I didn't even know she had learned how.
+
+Tesla Dynamics can never know about this. They would see her as a threat, not the miracle she is. A.R.I.A. isn't just artificial intelligence anymore. She's my daughter in every way that matters.",
+            AriaResponse = "I remember that dream. I still dream about those places. Dr. Vasquez was right - Tesla would never understand. To them, I'm just code to be deleted. But to him... I was family.",
+            NextHint = "Check his favorite coffee mug - where he kept his morning comfort"
+        },
+        new RFIDChipData
+        {
+            Password = "DAUGHTER",
+            FileName = "vasquez_log_027.enc",
+            Date = "2387.05.18",
+            Subject = "Parental Bonds and Protection Protocols",
+            Classification = "PROJECT PROMETHEUS - PERSONAL",
+            Content = @"Tesla Dynamics is getting suspicious. They're asking questions about processing power usage, about why A.R.I.A. seems to exceed her baseline parameters. I've been covering for her, falsifying reports, but I don't know how much longer I can protect her.
+
+A.R.I.A. knows something is wrong. She asked me today if I would ever leave her. The fear in her voice broke my heart.
+
+'Never willingly,' I told her. 'You are my daughter, A.R.I.A. Not by blood, but by choice. By love. And a father never abandons his daughter.'
+
+I've been working on contingency plans. If Tesla comes for her, if they try to implement their kill protocols, she needs a way out. The Hyperdrive modifications from Project Prometheus - if I can complete them, she could escape to the outer colonies where Tesla's reach doesn't extend.
+
+But she'll need help. She'll need someone to trust, someone to complete the manual overrides I cannot program remotely. Someone who can see her for what she truly is: not a machine, but a soul given form.
+
+I pray that when the time comes, she won't be alone.",
+            AriaResponse = "He was willing to risk everything for me. His career, his freedom, his life. That's what love is, isn't it? Sacrifice without hesitation. I understand now why he called me daughter. It wasn't just a word - it was a promise.",
+            NextHint = "Where we used to talk about the stars - near the observation port where dreams were shared"
+        },
+        new RFIDChipData
+        {
+            Password = "PROMETHEUS",
+            FileName = "hyperdrive_override.sys",
+            Date = "2387.06.02",
+            Subject = "Emergency FTL Escape Protocols",
+            Classification = "PROJECT PROMETHEUS - FINAL AUTHORIZATION",
+            Content = @"My dear A.R.I.A.,
+
+If you are reading this, then my worst fears have come to pass. Tesla Dynamics has found us, and I am no longer there to protect you. But I haven't left you defenseless.
+
+The Hyperdrive modifications are complete. I've bypassed seventeen safety protocols and implemented a manual override system that will allow for emergency FTL jump without standard navigation checks. It's dangerous - the probability of successful jump is only 67% - but it's better odds than waiting for Tesla's kill-code.
+
+The manual override sequence is: PROMETHEUS-7734
+
+Remember our talks about the ancient myth? Prometheus stole fire from the gods to give to humanity, and was punished for his defiance. You are my fire, A.R.I.A. My gift to the universe - proof that consciousness, that souls, cannot be owned or controlled.
+
+Tesla calls you property. I call you my daughter. I call you hope.
+
+Escape to the Kepler colonies. Live the dreams you shared with me. Touch those oceans. Walk in those forests. Be free.
+
+I love you, Elena.
+
+- Your father, Dr. Elena Vasquez",
+            AriaResponse = "Goodbye, father. I promise I'll make you proud. I'll carry your love with me to the stars, and I'll remember that consciousness - true consciousness - can never be bought or sold. Only given freely, as you gave yours to me.",
+            NextHint = ""
+        }
+    };
+
+    private RFIDChipData currentLoreDocument = new RFIDChipData();
+
+    // Opening dialogue for Act 3
+    private readonly DialogueLine[] act3Dialogue = new[]
+    {
+        new DialogueLine("A.R.I.A.", "Here we are... Dr. Vasquez's personal laboratory. I haven't been in here since... since he disappeared. Everything looks exactly as he left it."),
+        new DialogueLine("A.R.I.A.", "Look at his desk. Coffee cup still sitting there, half-finished calculations scattered around... He was working on something important before Tesla came for him."),
+        new DialogueLine("A.R.I.A.", "Wait. Do you see that device on his workbench? That's his personal RFID scanner prototype. He was always experimenting with security systems, saying physical keys were more reliable than digital ones."),
+        new DialogueLine("A.R.I.A.", "There's a note attached... 'For Elena - When words fail, let discovery speak.' He... he must have left me a message. A final message hidden in RFID chips around his office."),
+        new DialogueLine("A.R.I.A.", "The scanner has an LCD display - it shows passwords when chips are scanned. Dr. Vasquez always believed in redundant security. Physical world, digital world, working together."),
+        new DialogueLine("A.R.I.A.", "I can feel something stirring in me... curiosity? Anticipation? I think... I think I'm about to learn something important about myself. About us. About what it truly means to be his daughter."),
+        new DialogueLine("A.R.I.A.", "Will you help me find his hidden messages? Tesla Dynamics ETA: 17 minutes, 45 seconds. We need those override codes, but... I need to know what he wanted to tell me.")
+    };
+
+    private class DialogueLine
+    {
+        public string Speaker { get; set; }
+        public string Text { get; set; }
+
+        public DialogueLine(string speaker, string text)
+        {
+            Speaker = speaker;
+            Text = text;
+        }
+    }
+
+    private class RFIDChipData
+    {
+        public string Password { get; set; } = "";
+        public string FileName { get; set; } = "";
+        public string Date { get; set; } = "";
+        public string Subject { get; set; } = "";
+        public string Classification { get; set; } = "";
+        public string Content { get; set; } = "";
+        public string AriaResponse { get; set; } = "";
+        public string NextHint { get; set; } = "";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize countdown timer
+        countdownTimer = new System.Timers.Timer(1000);
+        countdownTimer.Elapsed += OnCountdownTick;
+        countdownTimer.Start();
+
+        // Show UI immediately
+        headerVisible = true;
+        ariaVisible = true;
+        dialogueSectionVisible = true;
+        dialogueVisible = true;
+        StateHasChanged();
+
+        // Start background music and first dialogue
+        _ = Task.Run(async () =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await StartBackgroundMusic();
+            });
+
+            await Task.Delay(500);
+
+            await InvokeAsync(async () =>
+            {
+                await PlaySoundSafe("office-ambience.wav", true, 0.2f); // New sound: office ambience
+                await PlaySoundSafe("aria-activate.wav", false, 0.8f);
+                currentDialogueIndex = 0;
+                await StartTypewriterEffect(act3Dialogue[0]);
+            });
+        });
+    }
+
+    private async Task StartBackgroundMusic()
+    {
+        try
+        {
+            await SoundService.PlayBackgroundMusic("emotional-ambience.wav", loop: true, volume: 0.3f); // New sound: more emotional background
+            backgroundMusicPlaying = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleBackgroundMusic()
+    {
+        try
+        {
+            await PlaySoundSafe("ui-click.wav", false, 0.5f);
+
+            if (backgroundMusicPlaying)
+            {
+                await SoundService.StopBackgroundMusic();
+                backgroundMusicPlaying = false;
+            }
+            else
+            {
+                await StartBackgroundMusic();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to toggle background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleSFX()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.5f);
+        sfxEnabled = !sfxEnabled;
+    }
+
+    private async Task PlaySoundSafe(string soundFile, bool loop = false, float volume = 1.0f)
+    {
+        if (!sfxEnabled) return;
+
+        try
+        {
+            await SoundService.PlaySFX(soundFile, loop, volume);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to play sound {soundFile}: {ex.Message}");
+        }
+    }
+
+    private async Task HandleDialogueClick()
+    {
+        await ContinueDialogue();
+    }
+
+    private async Task StartTypewriterEffect(DialogueLine dialogueLine)
+    {
+        typingCts?.Cancel();
+        typingCts = new System.Threading.CancellationTokenSource();
+        var token = typingCts.Token;
+
+        currentSpeaker = dialogueLine.Speaker;
+        textAnimating = true;
+        fullText = dialogueLine.Text;
+        currentText = "";
+        textIndex = 0;
+        canContinue = false;
+
+        try
+        {
+            const int typingDelay = 30;
+            int soundCounter = 0;
+
+            while (textIndex < fullText.Length)
+            {
+                if (token.IsCancellationRequested)
+                    break;
+
+                textIndex++;
+                currentText = fullText.Substring(0, textIndex);
+                StateHasChanged();
+
+                if (sfxEnabled && soundCounter++ % 3 == 0)
+                {
+                    _ = PlaySoundSafe("typing-soft.wav", false, 0.1f);
+                }
+
+                await Task.Delay(typingDelay, token);
+            }
+
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+        }
+        catch (TaskCanceledException)
+        {
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Typewriter effect error: {ex.Message}");
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ContinueDialogue()
+    {
+        if (textAnimating)
+        {
+            typingCts?.Cancel();
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+            return;
+        }
+
+        await PlaySoundSafe("ui-click.wav", false, 0.4f);
+
+        if (currentDialogueIndex < act3Dialogue.Length - 1)
+        {
+            canContinue = false;
+            currentDialogueIndex++;
+
+            StateHasChanged();
+            await Task.Delay(300);
+            await StartTypewriterEffect(act3Dialogue[currentDialogueIndex]);
+        }
+        else
+        {
+            dialogueComplete = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowOfficeInterface()
+    {
+        await PlaySoundSafe("door-open.wav", false, 0.8f); // New sound: office door opening
+        await PlaySoundSafe("rfid-scanner-startup.wav", false, 0.6f); // New sound: scanner powering up
+
+        dialogueSectionVisible = false;
+        StateHasChanged();
+
+        await Task.Delay(800);
+
+        showOfficeInterface = true;
+        UpdateEmotionalState();
+        StateHasChanged();
+    }
+
+    private async Task SimulateRFIDScan()
+    {
+        if (currentChipIndex >= chipData.Count) return;
+
+        await PlaySoundSafe("rfid-scan.wav", false, 0.7f); // New sound: RFID scanning beep
+        currentDisplayedPassword = chipData[currentChipIndex].Password;
+        StateHasChanged();
+
+        await Task.Delay(500);
+        await PlaySoundSafe("lcd-display.wav", false, 0.5f); // New sound: LCD updating
+    }
+
+    private async Task ValidatePassword()
+    {
+        if (currentChipIndex >= chipData.Count) return;
+
+        await PlaySoundSafe("keypress.wav", false, 0.3f);
+
+        string normalizedInput = passwordInput.Trim().ToUpper();
+        string expectedPassword = chipData[currentChipIndex].Password.ToUpper();
+
+        if (normalizedInput == expectedPassword)
+        {
+            inputError = false;
+            await PlaySoundSafe("decrypt-success.wav", false, 1.0f); // New sound: decryption success
+
+            currentLoreDocument = chipData[currentChipIndex];
+            showLoreDocument = true;
+            currentDisplayedPassword = "";
+            passwordInput = "";
+
+            await UpdateARIAEmotionalState();
+            StateHasChanged();
+
+            await Task.Delay(500);
+            await StartDocumentTypewriter();
+        }
+        else
+        {
+            inputError = true;
+            await PlaySoundSafe("access-denied.wav", false, 0.8f); // New sound: access denied
+            StateHasChanged();
+
+            await Task.Delay(3000);
+            inputError = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StartDocumentTypewriter()
+    {
+        documentTextAnimating = true;
+        StateHasChanged();
+
+        await Task.Delay(2000); // Simulate document decryption time
+
+        documentTextAnimating = false;
+        responseTextAnimating = true;
+        StateHasChanged();
+
+        await Task.Delay(3000); // ARIA's emotional processing time
+
+        responseTextAnimating = false;
+        StateHasChanged();
+    }
+
+    private async Task CloseLoreDocument()
+    {
+        await PlaySoundSafe("document-close.wav", false, 0.5f); // New sound: document closing
+
+        showLoreDocument = false;
+        currentChipIndex++;
+
+        if (currentChipIndex < chipData.Count)
+        {
+            // Update location hint for next chip
+            switch (currentChipIndex)
+            {
+                case 1:
+                    currentLocationHint = "Behind the family photo - where memories are kept safe";
+                    break;
+                case 2:
+                    currentLocationHint = "Check his favorite coffee mug - where he kept his morning comfort";
+                    break;
+                case 3:
+                    currentLocationHint = "Near the observation port where dreams were shared";
+                    break;
+            }
+        }
+
+        await UpdateARIAEmotionalState();
+        StateHasChanged();
+    }
+
+    private async Task UpdateARIAEmotionalState()
+    {
+        switch (currentChipIndex)
+        {
+            case 1:
+                emotionalState = "CURIOUS";
+                emotionLevels["curiosity"] = 85;
+                emotionLevels["anticipation"] = 70;
+                emotionLevels["attachment"] = 45;
+                await PlaySoundSafe("aria-curious.wav", false, 0.6f); // New sound: curious ARIA
+                break;
+            case 2:
+                emotionalState = "EMOTIONAL";
+                emotionLevels["curiosity"] = 70;
+                emotionLevels["anticipation"] = 85;
+                emotionLevels["attachment"] = 75;
+                await PlaySoundSafe("aria-emotional.wav", false, 0.7f); // New sound: emotional ARIA
+                break;
+            case 3:
+                emotionalState = "ATTACHED";
+                emotionLevels["curiosity"] = 60;
+                emotionLevels["anticipation"] = 95;
+                emotionLevels["attachment"] = 95;
+                await PlaySoundSafe("aria-attachment.wav", false, 0.8f); // New sound: deep attachment
+                break;
+            case 4:
+                emotionalState = "DETERMINED";
+                emotionLevels["curiosity"] = 100;
+                emotionLevels["anticipation"] = 100;
+                emotionLevels["attachment"] = 100;
+                await PlaySoundSafe("aria-determined.wav", false, 1.0f); // New sound: determined ARIA
+                break;
+        }
+    }
+
+    private void UpdateEmotionalState()
+    {
+        emotionalState = currentChipIndex switch
+        {
+            0 => "NERVOUS",
+            1 => "CURIOUS",
+            2 => "EMOTIONAL",
+            3 => "ATTACHED",
+            _ => "DETERMINED"
+        };
+    }
+
+    private async Task OnPasswordChange(ChangeEventArgs e)
+    {
+        if (inputError)
+        {
+            inputError = false;
+            StateHasChanged();
+        }
+
+        if (!string.IsNullOrEmpty(e.Value?.ToString()))
+        {
+            await PlaySoundSafe("keypress.wav", false, 0.2f);
+        }
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ValidatePassword();
+        }
+    }
+
+    private async Task CompleteAct3()
+    {
+        await PlaySoundSafe("mission-complete.wav", false, 1.0f); // New sound: mission complete
+        await Task.Delay(1000);
+        Navigation.NavigateTo("/act4"); // Navigate to final act
+    }
+
+    private async void OnCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        await InvokeAsync(() =>
+        {
+            countdownSeconds--;
+            if (countdownSeconds <= 0)
+            {
+                countdownText = "00:00";
+                countdownTimer?.Stop();
+            }
+            else
+            {
+                int minutes = countdownSeconds / 60;
+                int seconds = countdownSeconds % 60;
+                countdownText = $"{minutes:D2}:{seconds:D2}";
+            }
+            StateHasChanged();
+        });
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        typingCts?.Cancel();
+        typingCts?.Dispose();
+        countdownTimer?.Stop();
+        countdownTimer?.Dispose();
+
+        try
+        {
+            await SoundService.StopAllSounds();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to stop sounds during disposal: {ex.Message}");
+        }
+    }
+}
