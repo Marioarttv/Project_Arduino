@@ -900,6 +900,9 @@
         letter-spacing: 2px;
         margin-bottom: 0.5rem;
         color: #fff;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        max-width: 100%;
     }
 
     .button-subtitle {
@@ -1343,7 +1346,9 @@
         opacity: 0;
         transition: opacity 0.8s ease;
         overflow-y: auto;
+        overflow-x: hidden;
         padding: 2rem;
+        box-sizing: border-box;
     }
 
         .success-overlay.visible {
@@ -1361,6 +1366,8 @@
         text-align: center;
         max-height: 90vh;
         overflow-y: auto;
+        overflow-x: hidden;
+        box-sizing: border-box;
     }
 
     .success-header {
@@ -1390,6 +1397,9 @@
         border-radius: 12px;
         border: 1px solid rgba(0, 245, 255, 0.3);
         text-align: center;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        box-sizing: border-box;
     }
 
     .message-content {
@@ -1398,6 +1408,10 @@
         line-height: 1.6;
         font-style: italic;
         font-weight: bold;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        hyphens: auto;
+        max-width: 100%;
     }
 
     .aria-response {
@@ -1406,6 +1420,9 @@
         background: rgba(99, 102, 241, 0.1);
         border-radius: 12px;
         border: 1px solid rgba(99, 102, 241, 0.3);
+        box-sizing: border-box;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
     }
 
     .aria-avatar-small {
@@ -1425,6 +1442,7 @@
         position: relative;
         background: rgba(99, 102, 241, 0.1);
         backdrop-filter: blur(10px);
+        flex-shrink: 0;
     }
 
     .avatar-pulse-small {
@@ -1446,6 +1464,8 @@
 
     .emotional-text {
         text-align: center;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
     }
 
     .emotion-line {
@@ -1454,10 +1474,15 @@
         font-size: 1.1rem;
         line-height: 1.4;
         font-style: italic;
+        overflow-wrap: break-word;
+        word-wrap: break-word;
+        max-width: 100%;
     }
 
     .continue-actions {
         text-align: center;
+        box-sizing: border-box;
+        width: 100%;
     }
 
     .continue-mission-button {
@@ -1476,11 +1501,28 @@
         overflow: hidden;
         box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
         animation: missionButtonPulse 2s ease-in-out infinite;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
         .continue-mission-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 255, 136, 0.6);
+        }
+
+        .continue-mission-button .button-glow {
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+            transition: left 0.8s ease;
+            pointer-events: none;
+        }
+
+        .continue-mission-button:hover .button-glow {
+            left: 100%;
         }
 
     /* Animations */
@@ -1647,6 +1689,8 @@
         .success-content {
             padding: 1.5rem;
             margin: 0 1rem;
+            box-sizing: border-box;
+            max-width: calc(100vw - 2rem);
         }
 
         .success-title {
@@ -1664,6 +1708,15 @@
         .continue-mission-button {
             padding: 1rem 2rem;
             font-size: 1rem;
+            max-width: 100%;
+        }
+
+        .decoded-message {
+            padding: 1rem;
+        }
+
+        .aria-response {
+            padding: 1rem;
         }
 
         .translation-actions {
@@ -1716,14 +1769,13 @@
     {
         new DialogueLine("A.R.I.A.", "Perfect! Security checkpoint bypassed. I'm unlocking access to the lower decks now. But we need to move quickly. Tesla Dynamics ETA: 24 minutes, 12 seconds."),
         new DialogueLine("A.R.I.A.", "Excellent work! The security lockdown is lifting for our route. I'm now detecting a clear path to Engineering Deck C."),
-        new DialogueLine("A.R.I.A.", "But wait... I'm picking up some unusual signals from the Communications Array on Deck B. It's... it's not station equipment."),
-        new DialogueLine("A.R.I.A.", "Someone is trying to communicate with the Tesla Dynamics vessel. There may be a collaborator aboard NEXUS-7."),
+        new DialogueLine("A.R.I.A.", "But wait... I'm picking up some unusual signals from the Communications Array on Deck B. It's... it's not station equipment."),    
         new DialogueLine("A.R.I.A.", "Wait... I'm detecting a signal from Dr. Vasquez's private emergency frequency. But that's impossible - the frequency has been silent for weeks."),
         new DialogueLine("A.R.I.A.", "The Communications Array is just ahead. The signal is... it's very faint, like it's been repeating on a loop for a long time."),
         new DialogueLine("A.R.I.A.", "This is strange... the signal is using morse code. Dr. Vasquez always said morse code was the most reliable communication method during emergencies."),
-        new DialogueLine("A.R.I.A.", "She must have programmed this message before... before whatever happened to him. This could be his final communication."),
+        new DialogueLine("A.R.I.A.", "He must have programmed this message before... before whatever happened to him. This could be his final communication."),
         new DialogueLine("A.R.I.A.", "I can route Dr. Vasquez's morse code signal through the local speakers. This might be the last thing he ever wanted to tell me."),
-        new DialogueLine("A.R.I.A.", "She taught me morse code when I was first activated. Said it was important to understand communication in its purest form - just dots and dashes, but capable of conveying any human thought."),
+        new DialogueLine("A.R.I.A.", "He taught me morse code when I was first activated. Said it was important to understand communication in its purest form - just dots and dashes, but capable of conveying any human thought."),
         new DialogueLine("A.R.I.A.", "I'm... I'm almost afraid to hear what he left for me. But I need to know.")
     };
 
@@ -1868,7 +1920,7 @@
                 // Play typing sound every few characters
                 if (sfxEnabled && soundCounter++ % 3 == 0)
                 {
-                    _ = PlaySoundSafe("typing-soft.wav", false, 0.05f);
+                    _ = PlaySoundSafe("typing-soft.wav", false, 0.2f);
                 }
 
                 await Task.Delay(typingDelay, token);
@@ -1942,7 +1994,7 @@
 
         // Show morse interface
         showMorseInterface = true;
-        
+        await PlaySoundSafe("startup-sequence.wav", false, 0.6f);
         StateHasChanged();
     }
 
