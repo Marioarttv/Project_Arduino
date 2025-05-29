@@ -2224,7 +2224,7 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
             await InvokeAsync(async () =>
             {
                 await PlaySoundSafe("ui-click.wav", false, 0.8f);
-                await PlaySoundSafe("startup-sequence.wav", false, 0.8f);
+                // await PlaySoundSafe("startup-sequence.wav", false, 0.8f);
                 currentDialogueIndex = 0;
                 await StartTypewriterEffect(act4Dialogue[0]);
             });
@@ -2235,7 +2235,7 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
     {
         try
         {
-            await SoundService.PlayBackgroundMusic("space-ambience.wav", loop: true, volume: 0.25f);
+            await SoundService.PlayBackgroundMusic("final-countdown.wav", loop: true, volume: 0.25f); // New: tense finale music
             backgroundMusicPlaying = true;
         }
         catch (Exception ex)
@@ -2387,8 +2387,8 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
 
     private async Task ShowHyperdriveInterface()
     {
-        await PlaySoundSafe("startup-sequence.wav", false, 1.0f);
-        await PlaySoundSafe("ui-click.wav", false, 0.8f);
+        await PlaySoundSafe("hyperdrive-startup.wav", false, 0.8f); // New sound: hyperdrive chamber ambience
+        await PlaySoundSafe("aria-activate.wav", false, 0.8f);
 
         dialogueSectionVisible = false;
         showHyperdriveEffects = true;
@@ -2448,7 +2448,7 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
 
     private async Task InitiateJumpSequence()
     {
-        await PlaySoundSafe("startup-sequence.wav", false, 1.0f);
+        // await PlaySoundSafe("startup-sequence.wav", false, 1.0f);
 
         showHyperdriveInterface = false;
         StateHasChanged();
@@ -2469,12 +2469,12 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
         selectedEnding = choice;
         finalCountdownTimer?.Stop();
 
-        // Play appropriate sound for choice
+        // Original had specific sounds for each choice:
         string choiceSound = choice switch
         {
-            1 => "success.wav",
+            1 => "ui-click.wav",
             2 => "ui-click.wav", 
-            3 => "error.wav",
+            3 => "ui-click.wav",
             _ => "ui-click.wav"
         };
         await PlaySoundSafe(choiceSound, false, 1.0f);
@@ -2493,12 +2493,12 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
     {
         // Change background music for ending
         string endingMusic = selectedEnding switch
-        {
-            1 => "space-ambience.wav",
-            2 => "space-ambience.wav", 
-            3 => "space-ambience.wav",
-            _ => "space-ambience.wav"
-        };
+{
+    1 => "ending-triumph.wav",
+    2 => "ending-sacrifice.wav",
+    3 => "ending-failure.wav", 
+    _ => "ending-neutral.wav"
+};
 
         try
         {
