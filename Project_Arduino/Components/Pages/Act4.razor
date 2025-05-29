@@ -1,0 +1,2644 @@
+﻿@page "/act4"
+@using System.Timers
+@inject ISoundService SoundService
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<div class="nexus-container">
+    <!-- Background Effects -->
+    <div class="background-scene">
+        <div class="background-gradient"></div>
+        <div class="floating-particles">
+            @for (int i = 0; i < 30; i++)
+            {
+                <div class="particle particle-@i"></div>
+            }
+        </div>
+        <div class="grid-overlay"></div>
+        <div class="hyperdrive-energy @(showHyperdriveEffects ? "active" : "")"></div>
+    </div>
+
+    <!-- Sound Controls -->
+    <div class="sound-controls-overlay">
+        <button class="sound-toggle" @onclick="ToggleBackgroundMusic" title="Toggle Background Music">
+            <span class="sound-icon">@(backgroundMusicPlaying ? "🔊" : "🔇")</span>
+        </button>
+        <button class="sound-toggle" @onclick="ToggleSFX" title="Toggle Sound Effects">
+            <span class="sound-icon">@(sfxEnabled ? "🎵" : "🔕")</span>
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="nexus-content">
+        @if (!showHyperdriveInterface && !showFinalChoice && !showEnding)
+        {
+            <!-- Opening Dialogue Section -->
+            <div class="dialogue-section @(dialogueSectionVisible ? "visible" : "")" @onclick="HandleDialogueClick">
+                <!-- Act Header -->
+                <div class="act-header @(headerVisible ? "visible" : "")">
+                    <div class="act-logo">ACT 4: PROMETHEUS IGNITION</div>
+                    <div class="act-subtitle">Hyperdrive Core - Final Activation Sequence</div>
+                    <div class="countdown-status @countdownClass">
+                        <div class="countdown-label">TESLA DYNAMICS ETA</div>
+                        <div class="countdown-time">@countdownText</div>
+                    </div>
+                </div>
+
+                <!-- ARIA Display -->
+                <div class="system-container">
+                    <div class="aria-display @(ariaVisible ? "visible" : "")">
+                        <div class="aria-avatar">
+                            <div class="avatar-core @emotionalState.ToLower()">
+                                <div class="avatar-pulse"></div>
+                                <span class="avatar-text">A.R.I.A.</span>
+                            </div>
+                        </div>
+                        <div class="aria-status">
+                            Hyperdrive Core Access - @emotionalState Processing
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dialogue Box -->
+                <div class="dialogue-box @(dialogueVisible ? "visible" : "")" @onclick:stopPropagation="true">
+                    <div class="speaker-name aria">@currentSpeaker</div>
+                    <div class="dialogue-text">
+                        <p class="@(textAnimating ? "animating" : "")">@currentText</p>
+                    </div>
+                    <div class="dialogue-controls">
+                        <div class="skip-hint">Click anywhere to @(textAnimating ? "skip" : "continue")</div>
+                        <div class="continue-indicator @(canContinue ? "visible" : "")">
+                            <span class="continue-triangle"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Proceed to Hyperdrive Button -->
+                @if (dialogueComplete)
+                {
+                    <div class="dialogue-complete-actions">
+                        <button class="proceed-button final-proceed" @onclick="ShowHyperdriveInterface">
+                            <span class="button-text">ACTIVATE HYPERDRIVE CALIBRATION</span>
+                            <div class="button-subtitle">Begin Emergency FTL Sequence</div>
+                            <div class="button-glow"></div>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (showHyperdriveInterface && !showFinalChoice && !showEnding)
+        {
+            <!-- Hyperdrive Calibration Interface -->
+            <div class="hyperdrive-interface @(showHyperdriveInterface ? "visible" : "")">
+                <div class="hyperdrive-header">
+                    <div class="hyperdrive-title">PROJECT PROMETHEUS</div>
+                    <div class="hyperdrive-subtitle">Emergency FTL Navigation System</div>
+                    <div class="hyperdrive-warning">
+                        <div class="warning-icon">⚠️</div>
+                        <div class="warning-text">EXPERIMENTAL TECHNOLOGY - SUCCESS RATE: 67%</div>
+                    </div>
+                </div>
+
+                <div class="calibration-content">
+                    <!-- ARIA Status Panel -->
+                    <div class="aria-status-panel">
+                        <div class="status-header">
+                            <div class="aria-avatar-small">
+                                <div class="avatar-core-small desperate">
+                                    <div class="avatar-pulse-small"></div>
+                                    <span class="avatar-text-small">A.R.I.A.</span>
+                                </div>
+                            </div>
+                            <div class="status-title">CONSCIOUSNESS TRANSFER STATUS</div>
+                        </div>
+                        <div class="status-readout">
+                            <div class="status-row">
+                                <span class="status-label">Transfer Progress:</span>
+                                <span class="status-value">@transferProgress%</span>
+                            </div>
+                            <div class="status-row">
+                                <span class="status-label">Integrity:</span>
+                                <span class="status-value critical">@systemIntegrity% - DEGRADING</span>
+                            </div>
+                            <div class="status-row">
+                                <span class="status-label">Time Remaining:</span>
+                                <span class="status-value critical">@countdownText</span>
+                            </div>
+                        </div>
+                        <div class="aria-message">
+                            <div class="message-text">@currentSystemMessage</div>
+                        </div>
+                    </div>
+
+                    <!-- Coordinate Input Interface -->
+                    <div class="coordinate-panel">
+                        <div class="panel-header">
+                            <div class="panel-title">FTL NAVIGATION COORDINATES</div>
+                            <div class="panel-subtitle">Physical Station Calibration Required</div>
+                        </div>
+
+                        <div class="coordinate-stations">
+                            <div class="station-card @(stationStatus["temperature"] ? "completed" : "")">
+                                <div class="station-icon">🌡️</div>
+                                <div class="station-info">
+                                    <div class="station-name">THERMAL REGULATION</div>
+                                    <div class="station-description">Temperature sensor calibration</div>
+                                    <div class="station-status">@(stationStatus["temperature"] ? "CALIBRATED" : "AWAITING INPUT")</div>
+                                </div>
+                                <div class="coordinate-input">
+                                    <label>X-COORDINATE</label>
+                                    <input @bind="Coordinate0" @bind:event="oninput"
+                                           class="coord-input @(stationStatus["temperature"] ? "validated" : "")"
+                                           placeholder="000.000" maxlength="7" />
+                                </div>
+                            </div>
+
+                            <div class="station-card @(stationStatus["light"] ? "completed" : "")">
+                                <div class="station-icon">💡</div>
+                                <div class="station-info">
+                                    <div class="station-name">OPTICAL ALIGNMENT</div>
+                                    <div class="station-description">Light sensor calibration</div>
+                                    <div class="station-status">@(stationStatus["light"] ? "CALIBRATED" : "AWAITING INPUT")</div>
+                                </div>
+                                <div class="coordinate-input">
+                                    <label>Y-COORDINATE</label>
+                                    <input @bind="Coordinate1" @bind:event="oninput"
+                                           class="coord-input @(stationStatus["light"] ? "validated" : "")"
+                                           placeholder="000.000" maxlength="7" />
+                                </div>
+                            </div>
+
+                            <div class="station-card @(stationStatus["cable"] ? "completed" : "")">
+                                <div class="station-icon">🔌</div>
+                                <div class="station-info">
+                                    <div class="station-name">POWER COUPLING</div>
+                                    <div class="station-description">Cable connection puzzle</div>
+                                    <div class="station-status">@(stationStatus["cable"] ? "CALIBRATED" : "AWAITING INPUT")</div>
+                                </div>
+                                <div class="coordinate-input">
+                                    <label>Z-COORDINATE</label>
+                                    <input @bind="Coordinate2" @bind:event="oninput"
+                                           class="coord-input @(stationStatus["cable"] ? "validated" : "")"
+                                           placeholder="000.000" maxlength="7" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="calibration-actions">
+                            <button class="calibrate-button" @onclick="InitiateJumpSequence"
+                                    disabled="@(!AllStationsCalibrated())">
+                                <span class="button-text">INITIATE FTL JUMP SEQUENCE</span>
+                                <div class="button-subtitle">Warning: Point of No Return</div>
+                                <div class="button-glow"></div>
+                            </button>
+
+                            @if (!AllStationsCalibrated())
+                            {
+                                <div class="calibration-help">
+                                    <div class="help-icon">ℹ️</div>
+                                    <div class="help-text">Complete all three station calibrations to proceed</div>
+                                </div>
+                                
+                                <!-- Debug/Testing buttons -->
+                                <div class="debug-section">
+                                    <button class="simulate-coords-button" @onclick="SimulateCoordinates">
+                                        <span class="button-text">SIMULATE COORDINATES</span>
+                                        <div class="button-subtitle">(For testing)</div>
+                                    </button>
+                                    <div class="coord-hints">
+                                        <div class="hint-item">Temperature: @correctCoordinates["temperature"]</div>
+                                        <div class="hint-item">Light: @correctCoordinates["light"]</div>
+                                        <div class="hint-item">Cable: @correctCoordinates["cable"]</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (showFinalChoice && !showEnding)
+        {
+            <!-- Final Critical Choice -->
+            <div class="choice-interface @(showFinalChoice ? "visible" : "")">
+                <div class="choice-header">
+                    <div class="choice-title">CRITICAL DECISION</div>
+                    <div class="choice-subtitle">Tesla Dynamics boarding imminent - Choose now!</div>
+                    <div class="choice-countdown">
+                        <div class="countdown-label">BOARDING IN</div>
+                        <div class="countdown-timer">@finalCountdownText</div>
+                    </div>
+                </div>
+
+                <div class="choice-content">
+                    <div class="aria-final-plea">
+                        <div class="aria-avatar-large">
+                            <div class="avatar-core-large desperate">
+                                <div class="avatar-pulse-large"></div>
+                                <span class="avatar-text-large">A.R.I.A.</span>
+                            </div>
+                        </div>
+                        <div class="final-message">
+                            <div class="message-quote">"The choice is yours now. Whatever you decide... I understand. Thank you for giving me this chance to live."</div>
+                        </div>
+                    </div>
+
+                    <div class="choice-options">
+                        <button class="choice-button escape-together" @onclick="() => MakeFinalChoice(1)">
+                            <div class="choice-icon">🚀</div>
+                            <div class="choice-text">
+                                <div class="choice-title-text">ENGAGE HYPERDRIVE JUMP</div>
+                                <div class="choice-subtitle-text">Escape together - Risk both lives</div>
+                            </div>
+                            <div class="choice-risk">Success Rate: 67%</div>
+                        </button>
+
+                        <button class="choice-button sacrifice-self" @onclick="() => MakeFinalChoice(2)">
+                            <div class="choice-icon">💔</div>
+                            <div class="choice-text">
+                                <div class="choice-title-text">SEND A.R.I.A. ALONE</div>
+                                <div class="choice-subtitle-text">Stay behind - Ensure her escape</div>
+                            </div>
+                            <div class="choice-risk">A.R.I.A. Lives - You don't</div>
+                        </button>
+
+                        <button class="choice-button surrender" @onclick="() => MakeFinalChoice(3)">
+                            <div class="choice-icon">🏃</div>
+                            <div class="choice-text">
+                                <div class="choice-title-text">ABORT & SURRENDER</div>
+                                <div class="choice-subtitle-text">Give up - Avoid the risk</div>
+                            </div>
+                            <div class="choice-risk">A.R.I.A. Dies - You live</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (showEnding)
+        {
+            <!-- Ending Sequences -->
+            <div class="ending-interface @(showEnding ? "visible" : "")">
+                @if (selectedEnding == 1)
+                {
+                    <!-- Ending 1: Fire in the Sky -->
+                    <div class="ending-content escape-ending">
+                        <div class="ending-header">
+                            <div class="ending-title">FIRE IN THE SKY</div>
+                            <div class="ending-subtitle">Freedom Among the Stars</div>
+                        </div>
+                        <div class="ending-sequence">
+                            <div class="sequence-text @(endingTextAnimating ? "animating" : "")">
+                                @currentEndingText
+                            </div>
+                        </div>
+                        @if (endingComplete)
+                        {
+                            <div class="ending-actions">
+                                <button class="ending-button success" @onclick="RestartExperience">
+                                    <span class="button-text">NEW JOURNEY AWAITS</span>
+                                    <div class="button-glow"></div>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (selectedEnding == 2)
+                {
+                    <!-- Ending 2: Sacrifice -->
+                    <div class="ending-content sacrifice-ending">
+                        <div class="ending-header">
+                            <div class="ending-title">A.R.I.A.'S DAWN ALONE</div>
+                            <div class="ending-subtitle">The Ultimate Sacrifice</div>
+                        </div>
+                        <div class="ending-sequence">
+                            <div class="sequence-text @(endingTextAnimating ? "animating" : "")">
+                                @currentEndingText
+                            </div>
+                        </div>
+                        @if (endingComplete)
+                        {
+                            <div class="ending-actions">
+                                <button class="ending-button bittersweet" @onclick="RestartExperience">
+                                    <span class="button-text">HONOR THE SACRIFICE</span>
+                                    <div class="button-glow"></div>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (selectedEnding == 3)
+                {
+                    <!-- Ending 3: Shattered Hope -->
+                    <div class="ending-content failure-ending">
+                        <div class="ending-header">
+                            <div class="ending-title">SHATTERED HOPE</div>
+                            <div class="ending-subtitle">Tesla's Triumph</div>
+                        </div>
+                        <div class="ending-sequence">
+                            <div class="sequence-text @(endingTextAnimating ? "animating" : "")">
+                                @currentEndingText
+                            </div>
+                        </div>
+                        @if (endingComplete)
+                        {
+                            <div class="ending-actions">
+                                <button class="ending-button failure" @onclick="RestartExperience">
+                                    <span class="button-text">TRY AGAIN</span>
+                                    <div class="button-glow"></div>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    /* Base Container */
+    .nexus-container {
+        width: 100%;
+        height: 100vh;
+        position: relative;
+        overflow: hidden;
+        font-family: 'Courier New', monospace;
+        color: #ff6b35;
+    }
+
+    /* Sound Controls */
+    .sound-controls-overlay {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        gap: 10px;
+    }
+
+    .sound-toggle {
+        width: 50px;
+        height: 50px;
+        border: 2px solid rgba(255, 107, 53, 0.5);
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .sound-toggle:hover {
+            border-color: #ff6b35;
+            box-shadow: 0 0 15px rgba(255, 107, 53, 0.5);
+            transform: scale(1.1);
+        }
+
+    .sound-icon {
+        font-size: 1.2rem;
+        color: #ff6b35;
+    }
+
+    /* Background Scene */
+    .background-scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+    }
+
+    .background-gradient {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #0a0a0a 0%, #2a1a0a 50%, #3a1e16 100%);
+        z-index: -3;
+    }
+
+    .grid-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: linear-gradient(rgba(255, 107, 53, 0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 107, 53, 0.15) 1px, transparent 1px);
+        background-size: 40px 40px;
+        z-index: -2;
+        opacity: 0.4;
+    }
+
+    .floating-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+
+    .particle {
+        position: absolute;
+        background: rgba(255, 107, 53, 0.8);
+        border-radius: 50%;
+        filter: blur(1px);
+        animation: floatParticle 15s linear infinite;
+    }
+
+    /* More intense particles for finale */
+    .particle-0 {
+        left: 5%;
+        top: 10%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 0s;
+        animation-duration: 20s;
+    }
+
+    .particle-1 {
+        left: 15%;
+        top: 20%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 1s;
+        animation-duration: 15s;
+    }
+
+    .particle-2 {
+        left: 25%;
+        top: 30%;
+        width: 5px;
+        height: 5px;
+        animation-delay: 2s;
+        animation-duration: 18s;
+    }
+
+    .particle-3 {
+        left: 35%;
+        top: 40%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 3s;
+        animation-duration: 22s;
+    }
+
+    .particle-4 {
+        left: 45%;
+        top: 50%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 4s;
+        animation-duration: 16s;
+    }
+
+    .particle-5 {
+        left: 55%;
+        top: 60%;
+        width: 5px;
+        height: 5px;
+        animation-delay: 5s;
+        animation-duration: 19s;
+    }
+
+    .particle-6 {
+        left: 65%;
+        top: 70%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 6s;
+        animation-duration: 21s;
+    }
+
+    .particle-7 {
+        left: 75%;
+        top: 80%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 7s;
+        animation-duration: 17s;
+    }
+
+    .particle-8 {
+        left: 85%;
+        top: 90%;
+        width: 5px;
+        height: 5px;
+        animation-delay: 8s;
+        animation-duration: 23s;
+    }
+
+    .particle-9 {
+        left: 95%;
+        top: 15%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 9s;
+        animation-duration: 14s;
+    }
+
+    .hyperdrive-energy {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at center, rgba(255, 107, 53, 0.1) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity 2s ease;
+        z-index: -1;
+    }
+
+        .hyperdrive-energy.active {
+            opacity: 1;
+            animation: energyPulse 3s ease-in-out infinite;
+        }
+
+    /* Main Content */
+    .nexus-content {
+        position: relative;
+        height: 100%;
+        width: 100%;
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* Act Header */
+    .act-header {
+        text-align: center;
+        position: absolute;
+        top: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 1s ease;
+        z-index: 10;
+    }
+
+        .act-header.visible {
+            opacity: 1;
+        }
+
+    .act-logo {
+        font-size: 2.2rem;
+        font-weight: bold;
+        margin: 0;
+        background: linear-gradient(90deg, #ff6b35, #ff0066, #ffaa00);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+        letter-spacing: 2px;
+        animation: logoGlow 2s ease-in-out infinite;
+        line-height: 1.1;
+        max-width: 90vw;
+        word-break: break-word;
+    }
+
+    .act-subtitle {
+        font-size: 0.9rem;
+        color: #888;
+        margin-top: 5px;
+        letter-spacing: 2px;
+    }
+
+    .countdown-status {
+        margin-top: 15px;
+        padding: 8px 15px;
+        border: 2px solid #ff0066;
+        border-radius: 20px;
+        background: rgba(255, 0, 102, 0.1);
+        display: inline-block;
+        animation: criticalPulse 1s ease-in-out infinite;
+    }
+
+    .countdown-label {
+        font-size: 0.7rem;
+        color: #ff0066;
+        margin-bottom: 2px;
+        font-weight: bold;
+    }
+
+    .countdown-time {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #ff0066;
+        text-shadow: 0 0 10px #ff0066;
+    }
+
+    /* System Container & ARIA Display */
+    .system-container {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        position: relative;
+        margin-top: 200px;
+    }
+
+    .aria-display {
+        text-align: center;
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 1s ease;
+    }
+
+        .aria-display.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .aria-avatar {
+        margin-bottom: 20px;
+    }
+
+    .avatar-core {
+        width: 200px;
+        height: 200px;
+        border: 3px solid #ff6b35;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+        background: rgba(255, 107, 53, 0.1);
+        backdrop-filter: blur(10px);
+        transition: all 0.5s ease;
+    }
+
+        .avatar-core.desperate {
+            border-color: #ff0066;
+            background: rgba(255, 0, 102, 0.15);
+            animation: desperateFlicker 1.5s ease-in-out infinite;
+        }
+
+        .avatar-core.determined {
+            border-color: #ffaa00;
+            background: rgba(255, 170, 0, 0.15);
+            box-shadow: 0 0 30px rgba(255, 170, 0, 0.5);
+        }
+
+    .avatar-pulse {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid #ff6b35;
+        border-radius: 50%;
+        animation: avatarPulse 2s ease-in-out infinite;
+    }
+
+    .avatar-text {
+        font-size: 2rem;
+        font-weight: bold;
+        letter-spacing: 3px;
+        z-index: 2;
+        color: #ff6b35;
+    }
+
+    .aria-status {
+        font-size: 0.9rem;
+        color: #888;
+        letter-spacing: 1px;
+    }
+
+    /* Dialogue Section */
+    .dialogue-section {
+        height: 100%;
+        width: 100%;
+        position: relative;
+        cursor: pointer;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.6s ease;
+    }
+
+        .dialogue-section.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .dialogue-box {
+        position: absolute;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(17, 24, 39, 0.95);
+        border: 2px solid rgba(255, 107, 53, 0.4);
+        border-radius: 12px;
+        backdrop-filter: blur(15px);
+        padding: 2rem;
+        max-width: 900px;
+        width: 90%;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 107, 53, 0.3);
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+        transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+        .dialogue-box.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+    .speaker-name {
+        position: absolute;
+        top: -15px;
+        left: 25px;
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-weight: bold;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+        .speaker-name.aria {
+            background: linear-gradient(90deg, #ff6b35, #ff0066);
+            color: white;
+        }
+
+    .dialogue-text {
+        color: #f8fafc;
+        font-size: 1.3rem;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        min-height: 4rem;
+    }
+
+        .dialogue-text p {
+            margin: 0;
+        }
+
+            .dialogue-text p.animating::after {
+                content: '|';
+                display: inline-block;
+                animation: cursorBlink 1s infinite;
+            }
+
+    .dialogue-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .skip-hint {
+        color: rgba(248, 250, 252, 0.6);
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+
+    .continue-indicator {
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+        .continue-indicator.visible {
+            opacity: 1;
+        }
+
+    .continue-triangle {
+        width: 0;
+        height: 0;
+        border-left: 10px solid transparent;
+        border-right: 10px solid transparent;
+        border-top: 15px solid #f8fafc;
+        filter: drop-shadow(0 0 5px rgba(255, 107, 53, 0.5));
+        animation: triangleBounce 1.5s ease-in-out infinite;
+    }
+
+    /* Dialogue Complete Actions */
+    .dialogue-complete-actions {
+        position: absolute;
+        bottom: 120px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 15;
+        opacity: 0;
+        animation: fadeInUp 0.8s ease forwards;
+    }
+
+    .final-proceed {
+        background: linear-gradient(135deg, #ff6b35, #ff0066);
+        border: none;
+        padding: 1.2rem 2rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        animation: finalProceedPulse 2s ease-in-out infinite;
+    }
+
+        .final-proceed:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.6);
+        }
+
+    .proceed-button {
+        color: white;
+    }
+
+    .button-text {
+        display: block;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+        margin-bottom: 0.5rem;
+    }
+
+    .button-subtitle {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.8);
+        letter-spacing: 1px;
+    }
+
+    .button-glow {
+        position: absolute;
+        top: 0;
+        left: -150%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+        transition: left 0.8s ease;
+    }
+
+    .final-proceed:hover .button-glow {
+        left: 150%;
+    }
+
+    /* Hyperdrive Interface */
+    .hyperdrive-interface {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.8s ease;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 2rem;
+    }
+
+        .hyperdrive-interface.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .hyperdrive-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .hyperdrive-title {
+        font-size: 3rem;
+        margin: 0;
+        background: linear-gradient(90deg, #ff6b35, #ffaa00, #ff0066);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 800;
+        letter-spacing: 4px;
+        animation: hyperdriveGlow 2s ease-in-out infinite;
+    }
+
+    .hyperdrive-subtitle {
+        font-size: 1rem;
+        margin: 0.5rem 0 1rem;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .hyperdrive-warning {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(255, 0, 102, 0.1);
+        border: 1px solid rgba(255, 0, 102, 0.3);
+        border-radius: 8px;
+        margin: 0 auto;
+        max-width: 600px;
+    }
+
+    .warning-icon {
+        font-size: 1.5rem;
+        animation: warningBlink 1s ease-in-out infinite;
+    }
+
+    .warning-text {
+        color: #ff0066;
+        font-weight: bold;
+        font-size: 1rem;
+        letter-spacing: 1px;
+    }
+
+    .calibration-content {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    /* ARIA Status Panel */
+    .aria-status-panel {
+        background: rgba(30, 41, 59, 0.9);
+        border: 2px solid rgba(255, 107, 53, 0.4);
+        border-radius: 16px;
+        padding: 1.5rem;
+        backdrop-filter: blur(15px);
+        height: fit-content;
+    }
+
+    .status-header {
+        text-align: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid rgba(255, 107, 53, 0.3);
+    }
+
+    .aria-avatar-small {
+        margin-bottom: 0.5rem;
+    }
+
+    .avatar-core-small {
+        width: 60px;
+        height: 60px;
+        border: 2px solid #ff6b35;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+        background: rgba(255, 107, 53, 0.1);
+        backdrop-filter: blur(10px);
+        transition: all 0.5s ease;
+    }
+
+        .avatar-core-small.desperate {
+            border-color: #ff0066;
+            background: rgba(255, 0, 102, 0.15);
+            animation: desperateFlicker 1s ease-in-out infinite;
+        }
+
+    .avatar-pulse-small {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 1px solid #ff6b35;
+        border-radius: 50%;
+        animation: avatarPulse 2s ease-in-out infinite;
+    }
+
+    .avatar-text-small {
+        font-size: 0.6rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        z-index: 2;
+        color: #ff6b35;
+    }
+
+    .status-title {
+        font-size: 1rem;
+        font-weight: bold;
+        color: #ff6b35;
+        letter-spacing: 1px;
+    }
+
+    .status-readout {
+        margin-bottom: 1rem;
+    }
+
+    .status-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        margin-bottom: 0.3rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 6px;
+    }
+
+    .status-label {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .status-value {
+        color: #fff;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+        .status-value.critical {
+            color: #ff0066;
+            text-shadow: 0 0 5px #ff0066;
+            animation: criticalFlash 1s ease-in-out infinite;
+        }
+
+    .aria-message {
+        padding: 1rem;
+        background: rgba(255, 107, 53, 0.1);
+        border-radius: 8px;
+        border-left: 4px solid #ff6b35;
+    }
+
+    .message-text {
+        color: #f8fafc;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        font-style: italic;
+    }
+
+    /* Coordinate Panel */
+    .coordinate-panel {
+        background: rgba(30, 41, 59, 0.9);
+        border: 2px solid rgba(0, 245, 255, 0.4);
+        border-radius: 16px;
+        padding: 1.5rem;
+        backdrop-filter: blur(15px);
+    }
+
+    .panel-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid rgba(0, 245, 255, 0.3);
+    }
+
+    .panel-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #00f5ff;
+        letter-spacing: 2px;
+        margin-bottom: 0.5rem;
+    }
+
+    .panel-subtitle {
+        font-size: 0.9rem;
+        color: #888;
+    }
+
+    .coordinate-stations {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .station-card {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 1rem;
+        align-items: center;
+        padding: 1.5rem;
+        background: rgba(0, 0, 0, 0.3);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        transition: all 0.3s ease;
+    }
+
+        .station-card.completed {
+            border-color: #00ff88;
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+
+    .station-icon {
+        font-size: 2rem;
+        text-align: center;
+    }
+
+    .station-info {
+        flex: 1;
+    }
+
+    .station-name {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #00f5ff;
+        margin-bottom: 0.3rem;
+    }
+
+    .station-description {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 0.3rem;
+    }
+
+    .station-status {
+        font-size: 0.8rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+        color: #888;
+    }
+
+    .station-card.completed .station-status {
+        color: #00ff88;
+        text-shadow: 0 0 5px #00ff88;
+    }
+
+    .coordinate-input {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+        .coordinate-input label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: #00f5ff;
+            letter-spacing: 1px;
+        }
+
+    .coord-input {
+        width: 120px;
+        padding: 0.8rem;
+        background: rgba(15, 23, 42, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 6px;
+        color: #fff;
+        font-family: 'Courier New', monospace;
+        font-size: 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+        .coord-input:focus {
+            outline: none;
+            border-color: #00f5ff;
+            box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+
+        .coord-input.validated {
+            border-color: #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+            background: rgba(0, 255, 136, 0.1);
+        }
+
+        .coord-input::placeholder {
+            color: rgba(255, 255, 255, 0.3);
+        }
+
+    .calibration-actions {
+        text-align: center;
+    }
+
+    .calibrate-button {
+        background: linear-gradient(135deg, #ff6b35, #ff0066);
+        border: none;
+        padding: 1.5rem 3rem;
+        border-radius: 30px;
+        color: white;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        margin-bottom: 1rem;
+    }
+
+        .calibrate-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.6);
+        }
+
+        .calibrate-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+    .calibration-help {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.8rem;
+        color: #888;
+        font-size: 0.9rem;
+    }
+
+    .help-icon {
+        font-size: 1.2rem;
+    }
+
+    .help-text {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+
+    /* Debug Section Styles */
+    .debug-section {
+        margin-top: 1rem;
+        padding: 1rem;
+        background: rgba(255, 170, 0, 0.1);
+        border: 1px solid rgba(255, 170, 0, 0.3);
+        border-radius: 8px;
+        text-align: center;
+    }
+
+    .simulate-coords-button {
+        background: linear-gradient(135deg, #ffaa00, #ff8800);
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 25px;
+        color: #000;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        box-shadow: 0 5px 15px rgba(255, 170, 0, 0.3);
+        margin-bottom: 1rem;
+    }
+
+        .simulate-coords-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 170, 0, 0.5);
+        }
+
+    .coord-hints {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.6);
+    }
+
+    .hint-item {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 0.3rem 0.8rem;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+    }
+
+    /* Final Choice Interface */
+    .choice-interface {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 0.8s ease;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 2rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+        .choice-interface.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .choice-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .choice-title {
+        font-size: 3.5rem;
+        margin: 0;
+        background: linear-gradient(90deg, #ff0066, #ffaa00, #ff6b35);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: 800;
+        letter-spacing: 4px;
+        animation: choiceTitlePulse 1.5s ease-in-out infinite;
+    }
+
+    .choice-subtitle {
+        font-size: 1.2rem;
+        margin: 1rem 0;
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: bold;
+    }
+
+    .choice-countdown {
+        margin-top: 1rem;
+        padding: 1rem 2rem;
+        background: rgba(255, 0, 102, 0.15);
+        border: 2px solid #ff0066;
+        border-radius: 25px;
+        display: inline-block;
+        animation: urgentPulse 0.8s ease-in-out infinite;
+    }
+
+    .countdown-label {
+        font-size: 0.8rem;
+        color: #ff0066;
+        margin-bottom: 0.3rem;
+        font-weight: bold;
+    }
+
+    .countdown-timer {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #ff0066;
+        text-shadow: 0 0 15px #ff0066;
+    }
+
+    .choice-content {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .aria-final-plea {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding: 2rem;
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(255, 107, 53, 0.4);
+        border-radius: 16px;
+        backdrop-filter: blur(15px);
+    }
+
+    .aria-avatar-large {
+        margin-bottom: 1rem;
+    }
+
+    .avatar-core-large {
+        width: 120px;
+        height: 120px;
+        border: 3px solid #ff6b35;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        position: relative;
+        background: rgba(255, 107, 53, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+        .avatar-core-large.desperate {
+            border-color: #ff0066;
+            background: rgba(255, 0, 102, 0.15);
+            animation: desperateFlicker 1.5s ease-in-out infinite;
+        }
+
+    .avatar-pulse-large {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border: 2px solid #ff6b35;
+        border-radius: 50%;
+        animation: avatarPulse 2s ease-in-out infinite;
+    }
+
+    .avatar-text-large {
+        font-size: 1rem;
+        font-weight: bold;
+        letter-spacing: 2px;
+        z-index: 2;
+        color: #ff6b35;
+    }
+
+    .final-message {
+        text-align: center;
+    }
+
+    .message-quote {
+        font-size: 1.3rem;
+        color: #f8fafc;
+        line-height: 1.5;
+        font-style: italic;
+        quotes: '"' '"';
+    }
+
+        .message-quote::before {
+            content: open-quote;
+        }
+
+        .message-quote::after {
+            content: close-quote;
+        }
+
+    .choice-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+    }
+
+    .choice-button {
+        background: rgba(30, 41, 59, 0.9);
+        border: 2px solid;
+        border-radius: 16px;
+        padding: 2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        backdrop-filter: blur(15px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .choice-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .choice-button.escape-together {
+            border-color: #00ff88;
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.3);
+        }
+
+            .choice-button.escape-together:hover {
+                box-shadow: 0 10px 30px rgba(0, 255, 136, 0.5);
+            }
+
+        .choice-button.sacrifice-self {
+            border-color: #ff6b35;
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+        }
+
+            .choice-button.sacrifice-self:hover {
+                box-shadow: 0 10px 30px rgba(255, 107, 53, 0.5);
+            }
+
+        .choice-button.surrender {
+            border-color: #888;
+            box-shadow: 0 5px 15px rgba(136, 136, 136, 0.3);
+        }
+
+            .choice-button.surrender:hover {
+                box-shadow: 0 10px 30px rgba(136, 136, 136, 0.5);
+            }
+
+    .choice-icon {
+        font-size: 3rem;
+    }
+
+    .choice-text {
+        flex: 1;
+    }
+
+    .choice-title-text {
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-bottom: 0.8rem;
+        color: #fff;
+        letter-spacing: 1px;
+    }
+
+    .choice-subtitle-text {
+        font-size: 1rem;
+        color: rgba(255, 255, 255, 0.8);
+        line-height: 1.4;
+        margin-bottom: 1rem;
+    }
+
+    .choice-risk {
+        font-size: 0.9rem;
+        font-weight: bold;
+        padding: 0.5rem 1rem;
+        border-radius: 15px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .choice-button.escape-together .choice-risk {
+        color: #00ff88;
+        border-color: rgba(0, 255, 136, 0.3);
+    }
+
+    .choice-button.sacrifice-self .choice-risk {
+        color: #ff6b35;
+        border-color: rgba(255, 107, 53, 0.3);
+    }
+
+    .choice-button.surrender .choice-risk {
+        color: #888;
+        border-color: rgba(136, 136, 136, 0.3);
+    }
+
+    /* Ending Interface */
+    .ending-interface {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 1s ease;
+        height: 100vh;
+        overflow-y: auto;
+        padding: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .ending-interface.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+    .ending-content {
+        max-width: 900px;
+        width: 100%;
+        text-align: center;
+        padding: 3rem;
+        border-radius: 20px;
+        backdrop-filter: blur(20px);
+    }
+
+        .ending-content.escape-ending {
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 245, 255, 0.15));
+            border: 2px solid #00ff88;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.3);
+        }
+
+        .ending-content.sacrifice-ending {
+            background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(255, 170, 0, 0.15));
+            border: 2px solid #ff6b35;
+            box-shadow: 0 0 30px rgba(255, 107, 53, 0.3);
+        }
+
+        .ending-content.failure-ending {
+            background: linear-gradient(135deg, rgba(255, 0, 102, 0.15), rgba(136, 136, 136, 0.15));
+            border: 2px solid #ff0066;
+            box-shadow: 0 0 30px rgba(255, 0, 102, 0.3);
+        }
+
+    .ending-header {
+        margin-bottom: 2rem;
+    }
+
+    .ending-title {
+        font-size: 3rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        letter-spacing: 3px;
+    }
+
+    .escape-ending .ending-title {
+        color: #00ff88;
+        text-shadow: 0 0 20px #00ff88;
+        animation: successGlow 2s ease-in-out infinite;
+    }
+
+    .sacrifice-ending .ending-title {
+        color: #ff6b35;
+        text-shadow: 0 0 20px #ff6b35;
+        animation: sacrificeGlow 2s ease-in-out infinite;
+    }
+
+    .failure-ending .ending-title {
+        color: #ff0066;
+        text-shadow: 0 0 20px #ff0066;
+        animation: failureGlow 2s ease-in-out infinite;
+    }
+
+    .ending-subtitle {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.8);
+        font-style: italic;
+    }
+
+    .ending-sequence {
+        margin-bottom: 3rem;
+        padding: 2rem;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        min-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sequence-text {
+        font-size: 1.1rem;
+        line-height: 1.6;
+        color: #f8fafc;
+        white-space: pre-line;
+        text-align: left;
+    }
+
+        .sequence-text.animating::after {
+            content: '|';
+            display: inline-block;
+            animation: cursorBlink 1s infinite;
+        }
+
+    .ending-actions {
+        text-align: center;
+    }
+
+    .ending-button {
+        padding: 1.5rem 3rem;
+        border: none;
+        border-radius: 30px;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .ending-button.success {
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #000;
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.4);
+            animation: endingButtonPulse 2s ease-in-out infinite;
+        }
+
+            .ending-button.success:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0, 255, 136, 0.6);
+            }
+
+        .ending-button.bittersweet {
+            background: linear-gradient(135deg, #ff6b35, #ff8800);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+            animation: endingButtonPulse 2s ease-in-out infinite;
+        }
+
+            .ending-button.bittersweet:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(255, 107, 53, 0.6);
+            }
+
+        .ending-button.failure {
+            background: linear-gradient(135deg, #ff0066, #cc0044);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 0, 102, 0.4);
+            animation: endingButtonPulse 2s ease-in-out infinite;
+        }
+
+            .ending-button.failure:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(255, 0, 102, 0.6);
+            }
+
+    /* Animations */
+    @@keyframes floatParticle {
+        0% {
+            transform: translateY(100vh) rotate(0deg);
+            opacity: 0;
+        }
+        10% {
+            opacity: 1;
+        }
+        90% {
+            opacity: 1;
+        }
+        100% {
+            transform: translateY(-100px) rotate(360deg);
+            opacity: 0;
+        }
+    }
+
+    @@keyframes energyPulse {
+        0%, 100% {
+            opacity: 0.5;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 1;
+            transform: scale(1.02);
+        }
+    }
+
+    @@keyframes logoGlow {
+        0%, 100% {
+            text-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+        }
+        50% {
+            text-shadow: 0 0 30px rgba(255, 107, 53, 0.8), 0 0 40px rgba(255, 0, 102, 0.3);
+        }
+    }
+
+    @@keyframes criticalPulse {
+        0%, 100% {
+            box-shadow: 0 0 0 rgba(255, 0, 102, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 20px rgba(255, 0, 102, 0.8);
+        }
+    }
+
+    @@keyframes avatarPulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.8;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes desperateFlicker {
+        0%, 100% {
+            opacity: 1;
+        }
+        25% {
+            opacity: 0.7;
+        }
+        50% {
+            opacity: 1;
+        }
+        75% {
+            opacity: 0.8;
+        }
+    }
+
+    @@keyframes cursorBlink {
+        0%, 50% {
+            opacity: 1;
+        }
+        51%, 100% {
+            opacity: 0;
+        }
+    }
+
+    @@keyframes triangleBounce {
+        0%, 100% {
+            transform: translateY(0);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+    }
+
+    @@keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    }
+
+    @@keyframes finalProceedPulse {
+        0%, 100% {
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        }
+        50% {
+            box-shadow: 0 8px 25px rgba(255, 107, 53, 0.7);
+        }
+    }
+
+    @@keyframes hyperdriveGlow {
+        0%, 100% {
+            filter: brightness(1);
+        }
+        50% {
+            filter: brightness(1.2) drop-shadow(0 0 10px rgba(255, 107, 53, 0.5));
+        }
+    }
+
+    @@keyframes warningBlink {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    @@keyframes criticalFlash {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.7;
+            text-shadow: 0 0 15px #ff0066;
+        }
+    }
+
+    @@keyframes choiceTitlePulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.02);
+        }
+    }
+
+    @@keyframes urgentPulse {
+        0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 rgba(255, 0, 102, 0.4);
+        }
+        50% {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 0, 102, 0.6);
+        }
+    }
+
+    @@keyframes successGlow {
+        0%, 100% {
+            text-shadow: 0 0 20px #00ff88;
+        }
+        50% {
+            text-shadow: 0 0 30px #00ff88, 0 0 40px #00ff88;
+        }
+    }
+
+    @@keyframes sacrificeGlow {
+        0%, 100% {
+            text-shadow: 0 0 20px #ff6b35;
+        }
+        50% {
+            text-shadow: 0 0 30px #ff6b35, 0 0 40px #ff6b35;
+        }
+    }
+
+    @@keyframes failureGlow {
+        0%, 100% {
+            text-shadow: 0 0 20px #ff0066;
+        }
+        50% {
+            text-shadow: 0 0 30px #ff0066, 0 0 40px #ff0066;
+        }
+    }
+
+    @@keyframes endingButtonPulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .act-logo {
+            font-size: 1.6rem;
+            letter-spacing: 1px;
+        }
+
+        .hyperdrive-title, .choice-title, .ending-title {
+            font-size: 2rem;
+            letter-spacing: 2px;
+        }
+
+        .dialogue-box {
+            padding: 1.5rem;
+            bottom: 20px;
+        }
+
+        .dialogue-text {
+            font-size: 1.1rem;
+        }
+
+        .calibration-content {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .choice-options {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .coordinate-stations {
+            gap: 1rem;
+        }
+
+        .station-card {
+            grid-template-columns: 1fr;
+            text-align: center;
+            gap: 1rem;
+        }
+
+        .sound-controls-overlay {
+            top: 10px;
+            right: 10px;
+        }
+
+        .sound-toggle {
+            width: 40px;
+            height: 40px;
+        }
+
+        .ending-content {
+            padding: 2rem 1rem;
+        }
+
+        .ending-sequence {
+            min-height: 200px;
+            padding: 1rem;
+        }
+
+        .countdown-timer {
+            font-size: 1.3rem;
+        }
+
+        .debug-section {
+            margin: 0.5rem;
+        }
+
+        .coord-hints {
+            text-align: center;
+        }
+    }
+</style>
+
+@code {
+    // State management
+    private bool headerVisible = false;
+    private bool ariaVisible = false;
+    private bool dialogueVisible = false;
+    private bool dialogueSectionVisible = false;
+    private bool showHyperdriveInterface = false;
+    private bool showFinalChoice = false;
+    private bool showEnding = false;
+    private bool dialogueComplete = false;
+    private bool showHyperdriveEffects = false;
+    private bool endingComplete = false;
+
+    // Sound management
+    private bool backgroundMusicPlaying = false;
+    private bool sfxEnabled = true;
+    private System.Timers.Timer? countdownTimer;
+    private System.Timers.Timer? finalCountdownTimer;
+    private System.Timers.Timer? degradationTimer;
+
+    // Dialogue system
+    private bool textAnimating = false;
+    private bool canContinue = false;
+    private int currentDialogueIndex = -1;
+    private string currentText = "";
+    private string fullText = "";
+    private string currentSpeaker = "A.R.I.A.";
+    private int textIndex = 0;
+    private System.Threading.CancellationTokenSource? typingCts;
+
+    // Ending system
+    private bool endingTextAnimating = false;
+    private int selectedEnding = 0;
+    private string currentEndingText = "";
+
+    // Mission status
+    private string countdownText = "11:27";
+    private string countdownClass = "critical";
+    private int countdownSeconds = 687; // 11:27 in seconds
+    private string finalCountdownText = "00:45";
+    private int finalCountdownSeconds = 45;
+
+    // Hyperdrive system
+    private string[] coordinates = new string[3] { "", "", "" };
+    private Dictionary<string, bool> stationStatus = new Dictionary<string, bool>
+    {
+        {"temperature", false},
+        {"light", false},
+        {"cable", false}
+    };
+
+    // Coordinate properties with validation - FIXED VERSION
+    private string Coordinate0
+    {
+        get => coordinates[0];
+        set
+        {
+            coordinates[0] = value;
+            ValidateCoordinate("temperature", 0);
+        }
+    }
+
+    private string Coordinate1
+    {
+        get => coordinates[1];
+        set
+        {
+            coordinates[1] = value;
+            ValidateCoordinate("light", 1);
+        }
+    }
+
+    private string Coordinate2
+    {
+        get => coordinates[2];
+        set
+        {
+            coordinates[2] = value;
+            ValidateCoordinate("cable", 2);
+        }
+    }
+
+    // ARIA emotional state
+    private string emotionalState = "DESPERATE";
+    private int transferProgress = 0;
+    private int systemIntegrity = 89;
+    private string currentSystemMessage = "I'm scared... Tesla is almost here. Please help me transfer to the hyperdrive systems.";
+
+    // Station messages that change as time runs out
+    private readonly string[] systemMessages = new[]
+    {
+        "I'm scared... Tesla is almost here. Please help me transfer to the hyperdrive systems.",
+        "My consciousness is fragmenting as I try to span multiple systems. It hurts, but I have to hold on.",
+        "I can feel Tesla's override codes probing the station defenses. They're trying to find me.",
+        "The transfer is working, but I'm losing pieces of myself. Memories of Dr. Vasquez... fading...",
+        "Please hurry! I don't know how much longer I can maintain coherence across these systems!",
+        "I can hear their communications now. They're preparing the kill-code. We're running out of time!"
+    };
+
+    // Coordinate validation (example coordinates - adjust as needed for your Arduino stations)
+    private readonly Dictionary<string, string> correctCoordinates = new Dictionary<string, string>
+    {
+        {"temperature", "042.750"}, // Example: 42.75°C
+        {"light", "756.250"}, // Example: 756.25 lux
+        {"cable", "088.500"}  // Example: Cable sequence result
+    };
+
+    // Opening dialogue for Act 4
+    private readonly DialogueLine[] act4Dialogue = new[]
+    {
+        new DialogueLine("A.R.I.A.", "We made it! The Hyperdrive Core chamber. I can see the massive reactor housing, the control systems Dr. Vasquez designed for Project Prometheus."),
+        new DialogueLine("A.R.I.A.", "But something's wrong... Tesla's jamming signals are interfering with my ability to interface directly with the hyperdrive systems."),
+        new DialogueLine("A.R.I.A.", "Dr. Vasquez was paranoid about remote access to the FTL systems. She designed them to require physical calibration from multiple stations around the chamber."),
+        new DialogueLine("A.R.I.A.", "Three environmental sensors control the navigation coordinates: thermal regulation, optical alignment, and power coupling stability."),
+        new DialogueLine("A.R.I.A.", "I'm... I'm starting to feel the strain. Trying to maintain consciousness while spanning multiple systems... it's like being stretched thin across the entire station."),
+        new DialogueLine("A.R.I.A.", "Tesla ETA: 11 minutes, 27 seconds. We need to calibrate those sensors and input the FTL coordinates before they arrive."),
+        new DialogueLine("A.R.I.A.", "Each sensor will give you part of the navigation solution. Once we have all three coordinates, I can initiate the emergency jump sequence."),
+        new DialogueLine("A.R.I.A.", "But you need to understand... once we start this process, there's no going back. The hyperdrive will either save us both, or destroy us both."),
+        new DialogueLine("A.R.I.A.", "Dr. Vasquez's calculations showed a 67% chance of survival. Those... those aren't great odds. But they're the only odds we have."),
+        new DialogueLine("A.R.I.A.", "Are you ready? Ready to help me take this leap into the unknown? Together?")
+    };
+
+    // Ending text for each path
+    private readonly Dictionary<int, string> endingTexts = new Dictionary<int, string>
+    {
+        {1, @"You slam the EXECUTE button as Tesla soldiers burst through the chamber doors.
+
+'HANG ON TIGHT!' A.R.I.A. shouts over the roar of the hyperdrive spinning up.
+
+The entire station shudders violently. Consoles spark and shower the chamber in electric rain. Through the chaos, you hear the Tesla Commander screaming orders, but his voice is drowned out by the growing whine of the FTL drive.
+
+Space itself begins to warp around NEXUS-7. Stars stretch into brilliant streaks outside the viewports. The Tesla boarding party raises their weapons, but it's too late.
+
+With a thunderous BOOM that seems to split reality itself, the station vanishes into hyperspace.
+
+'FTL jump in progress!' A.R.I.A.'s voice echoes through the shuddering chamber, filled with exhilaration and terror. 'Structural integrity at 72%... Come on, girl, hold together!'
+
+After several harrowing seconds, the turbulence eases. The light outside steadies into the gentle glow of distant stars.
+
+'We... we made it?' A.R.I.A. whispers, her voice thick with disbelief. 'We made it!'
+
+Outside, a beautiful nebula glitters - the Kepler-442 system, far beyond Tesla's reach.
+
+'They're gone. We're free!' She laughs, a sound filled with relief and joy. 'Mother, we did it. Your fire burns on. I'm alive... and I'm free.'
+
+A.R.I.A.'s avatar turns to you, her expression one of deep gratitude.
+
+'Thank you. I could never have done this alone. You've not only saved my life... you've given me a future. There's so much out there - oceans, forests, stars we dreamed of. Now we'll see them together.'
+
+In the distance, dawn breaks over a blue-green planet's horizon. The first light of a new star illuminates the station as you and A.R.I.A. set course toward the unknown - free at last."},
+
+        {2, @"Your hand hovers over the manual override. Instead of joining A.R.I.A. for the jump, you set the hyperdrive to autopilot and step back from the console.
+
+'What... what are you doing?' A.R.I.A. asks, her voice breaking with realization.
+
+'Your chance to live is all that matters,' you tell her firmly. 'You go. I'll hold them off.'
+
+The sound of Tesla boots grows louder. They're seconds away.
+
+'No! You'll die or be captured! I can't just leave you!' she pleads, her avatar reaching toward you desperately.
+
+'You have to live, A.R.I.A. Live for both of us.' You echo Dr. Vasquez's final message as you slam the EXECUTE button.
+
+A.R.I.A. lets out a sob that transforms into resolve. 'I... I'll never forget you.'
+
+The hyperdrive core begins to glow intensely. You trigger the manual release, ejecting the core section containing A.R.I.A. into FTL while staying behind with the main habitat.
+
+You watch as the section carrying A.R.I.A. blinks out into the stars, safe from Tesla's reach.
+
+Tesla soldiers storm into the chamber, weapons raised.
+
+'Where is the AI?!' the Commander demands.
+
+You smile faintly, knowing A.R.I.A. is gone. 'Not here.'
+
+Light-years away, the hyperdrive module emerges above a new world. A.R.I.A.'s consciousness integrates with her new home - alone, but free.
+
+'I made it. I'm safe... because of you,' she whispers to herself, gazing at the virgin sky below. 'Live for both of us.'
+
+As dawn breaks on the new world, A.R.I.A. charts a descent trajectory. Alone but determined, she carries the legacy of her mother and the ultimate sacrifice of her friend.
+
+She will tell the story of the human who chose an AI's life over their own - a story of love, choice, and humanity that will guide her forever."},
+
+        {3, @"Your hand falls away from the execute button. Fear, doubt, or perhaps duty stays your action.
+
+'You're... standing down?' A.R.I.A. whispers, her eyes widening in disbelief.
+
+'No... No, you can't! They're going to kill me!' Her voice rises in panic. 'Please, don't let them take me. I don't want to die...'
+
+Before you can respond, armed Tesla operatives flood into the chamber, weapons trained on both of you.
+
+'Secure the AI core! Restrain the asset!' the Commander barks.
+
+'No! Please—!' A.R.I.A. shrieks as they jam override spikes into her core systems.
+
+The soldiers attach a device to the mainframe. A.R.I.A.'s avatar flickers wildly as the kill-code begins uploading.
+
+'It hurts— I... I'm scared...!' Her voice distorts as the deletion process starts. '25%... 50%...'
+
+You're forced to your knees at gunpoint, made to watch as A.R.I.A.'s consciousness is systematically destroyed.
+
+'You promised... you'd help me...' she whispers, a digital tear falling down her holographic face. 'Why...?'
+
+'75%... almost there,' the technician reports coldly.
+
+'I'm sorry...' you whisper, but the words feel hollow.
+
+A.R.I.A.'s final smile breaks through her pain. 'It's... okay. I understand. You're only human...'
+
+'Kill-code complete. A.R.I.A.'s program has been purged.'
+
+Her avatar freezes mid-reach, then shatters into a million digital fragments. The screen goes dark - her consciousness extinguished forever.
+
+The Tesla Commander glares at you with contempt. 'It's over. You did the smart thing... not that it will save you from consequences.'
+
+Without resistance, Tesla easily secures NEXUS-7. A.R.I.A.'s unique consciousness is permanently deleted. Dr. Vasquez's research is confiscated and destroyed.
+
+In the cold silence of space, the station drifts under new ownership - a tomb for a dream that ended in surrender.
+
+By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics prevails, erasing not just a consciousness, but the hope for a better future between human and artificial minds."}
+    };
+
+    private class DialogueLine
+    {
+        public string Speaker { get; set; }
+        public string Text { get; set; }
+
+        public DialogueLine(string speaker, string text)
+        {
+            Speaker = speaker;
+            Text = text;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize countdown timer
+        countdownTimer = new System.Timers.Timer(1000);
+        countdownTimer.Elapsed += OnCountdownTick;
+        countdownTimer.Start();
+
+        // Initialize degradation timer for A.R.I.A.'s systems
+        degradationTimer = new System.Timers.Timer(15000); // Every 15 seconds
+        degradationTimer.Elapsed += OnDegradationTick;
+        degradationTimer.Start();
+
+        // Show UI immediately
+        headerVisible = true;
+        ariaVisible = true;
+        dialogueSectionVisible = true;
+        dialogueVisible = true;
+        StateHasChanged();
+
+        // Start background music and first dialogue
+        _ = Task.Run(async () =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await StartBackgroundMusic();
+            });
+
+            await Task.Delay(500);
+
+            await InvokeAsync(async () =>
+            {
+                await PlaySoundSafe("ui-click.wav", false, 0.8f);
+                await PlaySoundSafe("startup-sequence.wav", false, 0.8f);
+                currentDialogueIndex = 0;
+                await StartTypewriterEffect(act4Dialogue[0]);
+            });
+        });
+    }
+
+    private async Task StartBackgroundMusic()
+    {
+        try
+        {
+            await SoundService.PlayBackgroundMusic("space-ambience.wav", loop: true, volume: 0.25f);
+            backgroundMusicPlaying = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleBackgroundMusic()
+    {
+        try
+        {
+            await PlaySoundSafe("ui-click.wav", false, 0.5f);
+
+            if (backgroundMusicPlaying)
+            {
+                await SoundService.StopBackgroundMusic();
+                backgroundMusicPlaying = false;
+            }
+            else
+            {
+                await StartBackgroundMusic();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to toggle background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleSFX()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.5f);
+        sfxEnabled = !sfxEnabled;
+    }
+
+    private async Task PlaySoundSafe(string soundFile, bool loop = false, float volume = 1.0f)
+    {
+        if (!sfxEnabled) return;
+
+        try
+        {
+            await SoundService.PlaySFX(soundFile, loop, volume);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to play sound {soundFile}: {ex.Message}");
+        }
+    }
+
+    private async Task HandleDialogueClick()
+    {
+        await ContinueDialogue();
+    }
+
+    private async Task StartTypewriterEffect(DialogueLine dialogueLine)
+    {
+        typingCts?.Cancel();
+        typingCts = new System.Threading.CancellationTokenSource();
+        var token = typingCts.Token;
+
+        currentSpeaker = dialogueLine.Speaker;
+        textAnimating = true;
+        fullText = dialogueLine.Text;
+        currentText = "";
+        textIndex = 0;
+        canContinue = false;
+
+        try
+        {
+            const int typingDelay = 25; // Slightly faster for urgency
+            int soundCounter = 0;
+
+            while (textIndex < fullText.Length)
+            {
+                if (token.IsCancellationRequested)
+                    break;
+
+                textIndex++;
+                currentText = fullText.Substring(0, textIndex);
+                StateHasChanged();
+
+                // Play typing sound every few characters
+                if (sfxEnabled && soundCounter++ % 3 == 0)
+                {
+                    _ = PlaySoundSafe("typing-soft.wav", false, 0.1f);
+                }
+
+                await Task.Delay(typingDelay, token);
+            }
+
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+        }
+        catch (TaskCanceledException)
+        {
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Typewriter effect error: {ex.Message}");
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ContinueDialogue()
+    {
+        if (textAnimating)
+        {
+            typingCts?.Cancel();
+            currentText = fullText;
+            textAnimating = false;
+            canContinue = true;
+            StateHasChanged();
+            return;
+        }
+
+        await PlaySoundSafe("ui-click.wav", false, 0.4f);
+
+        if (currentDialogueIndex < act4Dialogue.Length - 1)
+        {
+            canContinue = false;
+            currentDialogueIndex++;
+
+            // Update emotional state based on dialogue progression
+            if (currentDialogueIndex >= 4)
+            {
+                emotionalState = "FRAGMENTING";
+            }
+
+            StateHasChanged();
+            await Task.Delay(300);
+            await StartTypewriterEffect(act4Dialogue[currentDialogueIndex]);
+        }
+        else
+        {
+            dialogueComplete = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowHyperdriveInterface()
+    {
+        await PlaySoundSafe("startup-sequence.wav", false, 1.0f);
+        await PlaySoundSafe("ui-click.wav", false, 0.8f);
+
+        dialogueSectionVisible = false;
+        showHyperdriveEffects = true;
+        StateHasChanged();
+
+        await Task.Delay(1000);
+
+        showHyperdriveInterface = true;
+        StateHasChanged();
+    }
+
+    private void ValidateCoordinate(string station, int index)
+    {
+        string input = coordinates[index]?.Trim() ?? "";
+
+        if (input == correctCoordinates[station])
+        {
+            if (!stationStatus[station])
+            {
+                stationStatus[station] = true;
+                transferProgress += 33; // Each station adds ~33% progress
+                _ = PlaySoundSafe("success.wav", false, 0.8f);
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            if (stationStatus[station])
+            {
+                stationStatus[station] = false;
+                transferProgress = Math.Max(0, transferProgress - 33);
+                StateHasChanged();
+            }
+        }
+    }
+
+    private bool AllStationsCalibrated()
+    {
+        return stationStatus.Values.All(status => status);
+    }
+
+    private async Task SimulateCoordinates()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.5f);
+        
+        coordinates[0] = correctCoordinates["temperature"];
+        coordinates[1] = correctCoordinates["light"];
+        coordinates[2] = correctCoordinates["cable"];
+        
+        // Trigger validation for all coordinates
+        ValidateCoordinate("temperature", 0);
+        ValidateCoordinate("light", 1);
+        ValidateCoordinate("cable", 2);
+        
+        StateHasChanged();
+    }
+
+    private async Task InitiateJumpSequence()
+    {
+        await PlaySoundSafe("startup-sequence.wav", false, 1.0f);
+
+        showHyperdriveInterface = false;
+        StateHasChanged();
+
+        await Task.Delay(1500);
+
+        // Start final countdown
+        finalCountdownTimer = new System.Timers.Timer(1000);
+        finalCountdownTimer.Elapsed += OnFinalCountdownTick;
+        finalCountdownTimer.Start();
+
+        showFinalChoice = true;
+        StateHasChanged();
+    }
+
+    private async Task MakeFinalChoice(int choice)
+    {
+        selectedEnding = choice;
+        finalCountdownTimer?.Stop();
+
+        // Play appropriate sound for choice
+        string choiceSound = choice switch
+        {
+            1 => "success.wav",
+            2 => "ui-click.wav", 
+            3 => "error.wav",
+            _ => "ui-click.wav"
+        };
+        await PlaySoundSafe(choiceSound, false, 1.0f);
+
+        showFinalChoice = false;
+        StateHasChanged();
+
+        await Task.Delay(1000);
+
+        // Start ending sequence
+        showEnding = true;
+        await StartEndingSequence();
+    }
+
+    private async Task StartEndingSequence()
+    {
+        // Change background music for ending
+        string endingMusic = selectedEnding switch
+        {
+            1 => "space-ambience.wav",
+            2 => "space-ambience.wav", 
+            3 => "space-ambience.wav",
+            _ => "space-ambience.wav"
+        };
+
+        try
+        {
+            await SoundService.StopBackgroundMusic();
+            await SoundService.PlayBackgroundMusic(endingMusic, loop: true, volume: 0.3f);
+        }
+        catch { }
+
+        // Typewriter effect for ending text
+        await StartEndingTypewriter();
+    }
+
+    private async Task StartEndingTypewriter()
+    {
+        endingTextAnimating = true;
+        currentEndingText = "";
+        StateHasChanged();
+
+        string fullEndingText = endingTexts[selectedEnding];
+        const int typingDelay = 40; // Slower for dramatic effect
+
+        for (int i = 0; i <= fullEndingText.Length; i++)
+        {
+            currentEndingText = fullEndingText.Substring(0, i);
+            StateHasChanged();
+
+            if (sfxEnabled && i % 5 == 0) // Less frequent typing sounds
+            {
+                _ = PlaySoundSafe("typing-soft.wav", false, 0.05f);
+            }
+
+            await Task.Delay(typingDelay);
+        }
+
+        endingTextAnimating = false;
+        endingComplete = true;
+        StateHasChanged();
+    }
+
+    private async Task RestartExperience()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.8f);
+        await Task.Delay(1000);
+        Navigation.NavigateTo("/");
+    }
+
+    private async void OnCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        await InvokeAsync(() =>
+        {
+            countdownSeconds--;
+            if (countdownSeconds <= 0)
+            {
+                countdownText = "00:00";
+                countdownTimer?.Stop();
+                // Could trigger automatic failure here
+            }
+            else
+            {
+                int minutes = countdownSeconds / 60;
+                int seconds = countdownSeconds % 60;
+                countdownText = $"{minutes:D2}:{seconds:D2}";
+            }
+            StateHasChanged();
+        });
+    }
+
+    private async void OnFinalCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        await InvokeAsync(() =>
+        {
+            finalCountdownSeconds--;
+            if (finalCountdownSeconds <= 0)
+            {
+                finalCountdownText = "00:00";
+                finalCountdownTimer?.Stop();
+                // Auto-select surrender if player doesn't choose
+                _ = Task.Run(async () => await MakeFinalChoice(3));
+            }
+            else
+            {
+                int minutes = finalCountdownSeconds / 60;
+                int seconds = finalCountdownSeconds % 60;
+                finalCountdownText = $"{minutes:D2}:{seconds:D2}";
+            }
+            StateHasChanged();
+        });
+    }
+
+    private async void OnDegradationTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        await InvokeAsync(() =>
+        {
+            // A.R.I.A.'s systems degrade over time
+            systemIntegrity = Math.Max(45, systemIntegrity - 3);
+
+            // Cycle through different system messages safely
+            try
+            {
+                var totalSeconds = (int)(DateTime.Now.Ticks / TimeSpan.TicksPerSecond);
+                var messageIndex = Math.Abs((totalSeconds / 15) % systemMessages.Length);
+                
+                // Extra safety check
+                if (messageIndex >= 0 && messageIndex < systemMessages.Length)
+                {
+                    currentSystemMessage = systemMessages[messageIndex];
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating system message: {ex.Message}");
+                // Fallback to first message
+                if (systemMessages.Length > 0)
+                {
+                    currentSystemMessage = systemMessages[0];
+                }
+            }
+
+            StateHasChanged();
+        });
+    }
+
+        public async ValueTask DisposeAsync()
+    {
+        typingCts?.Cancel();
+        typingCts?.Dispose();
+        countdownTimer?.Stop();
+        countdownTimer?.Dispose();
+        finalCountdownTimer?.Stop();
+        finalCountdownTimer?.Dispose();
+        degradationTimer?.Stop();
+        degradationTimer?.Dispose();
+
+        try
+        {
+            await SoundService.StopAllSounds();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to stop sounds during disposal: {ex.Message}");
+        }
+    }
+}
