@@ -143,7 +143,7 @@
                             <div class="role-item">QUALITY ASSURANCE</div>
                         </div>
                         <div class="member-description">
-                            Master of physical interfaces, bridging the digital and tangible worlds.
+                            Master of physical interfaces, bridging the digital and real world.
                         </div>
                     </div>
                 </div>
@@ -208,9 +208,9 @@
     {
         <div class="return-overlay">
             <div class="return-content">
-                <div class="return-message">Thank you for experiencing Project Prometheus</div>
+                <div class="return-message">Thank you for experiencing Nexus-7</div>
                 <button class="return-button" @onclick="ReturnHome">
-                    <span class="button-text">RETURN TO NEXUS-7</span>
+                    <span class="button-text">RETURN TO HOME</span>
                     <div class="button-glow"></div>
                 </button>
             </div>
@@ -1083,7 +1083,7 @@
     {
         try
         {
-            await SoundService.PlayBackgroundMusic("credits-theme.wav", loop: true, volume: 0.4f);
+            await SoundService.PlayBackgroundMusic("credits-theme.wav", loop: false, volume: 0.4f);
             backgroundMusicPlaying = true;
         }
         catch (Exception ex)
