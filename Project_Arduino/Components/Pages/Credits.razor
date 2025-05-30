@@ -1,0 +1,1174 @@
+﻿@page "/credits"
+@using System.Timers
+@inject ISoundService SoundService
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<div class="credits-container">
+    <!-- Background Effects -->
+    <div class="background-scene">
+        <div class="background-gradient"></div>
+        <div class="floating-particles">
+            @for (int i = 0; i < 30; i++)
+            {
+                <div class="particle particle-@i"></div>
+            }
+        </div>
+        <div class="grid-overlay"></div>
+        <div class="credits-stars">
+            @for (int i = 0; i < 50; i++)
+            {
+                <div class="star star-@i"></div>
+            }
+        </div>
+    </div>
+
+    <!-- Sound Controls -->
+    <div class="sound-controls-overlay">
+        <button class="sound-toggle" @onclick="ToggleBackgroundMusic" title="Toggle Background Music">
+            <span class="sound-icon">@(backgroundMusicPlaying ? "🔊" : "🔇")</span>
+        </button>
+        <button class="sound-toggle" @onclick="ToggleSFX" title="Toggle Sound Effects">
+            <span class="sound-icon">@(sfxEnabled ? "🎵" : "🔕")</span>
+        </button>
+    </div>
+
+    <!-- Credits Content -->
+    <div class="credits-content @(startScrolling ? "scrolling" : "")">
+
+        <!-- Main Title -->
+        <div class="credits-section title-section">
+            <div class="main-title">PROJECT PROMETHEUS</div>
+            <div class="main-subtitle">An Interactive Escape Room Experience</div>
+            <div class="title-decoration">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+        </div>
+
+        <!-- Characters Section -->
+        <div class="credits-section characters-section">
+            <div class="section-title">NEXUS-7 STATION PERSONNEL</div>
+
+            <div class="character-cards">
+                <!-- Andreas -->
+                <div class="character-card">
+                    <div class="card-frame">
+                        <img src="/images/characters/andreas-portrait.jpg" alt="Andreas Portrait" class="character-portrait" />
+                        <div class="card-overlay">
+                            <div class="character-name">ANDREAS</div>
+                            <div class="character-role">THE MATHEMATICIAN</div>
+                            <div class="character-description">
+                                Precision meets intuition. Master of numbers and patterns,
+                                Andreas brings analytical thinking to every challenge.
+                            </div>
+                            <div class="character-status">ALPHA SQUAD MEMBER</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Heiko -->
+                <div class="character-card">
+                    <div class="card-frame">
+                        <img src="/images/characters/heiko-portrait.jpg" alt="Heiko Portrait" class="character-portrait" />
+                        <div class="card-overlay">
+                            <div class="character-name">HEIKO</div>
+                            <div class="character-role">THE CODER</div>
+                            <div class="character-description">
+                                Where logic meets innovation. Heiko's programming expertise
+                                bridges the gap between human intuition and digital systems.
+                            </div>
+                            <div class="character-status">ALPHA SQUAD MEMBER</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- A.R.I.A. -->
+                <div class="character-card special-card">
+                    <div class="card-frame aria-frame">
+                        <img src="/images/characters/aria-portrait.jpg" alt="A.R.I.A. Portrait" class="character-portrait" />
+                        <div class="card-overlay aria-overlay">
+                            <div class="character-name aria-name">A.R.I.A.</div>
+                            <div class="character-role">AUTONOMOUS ROBOTIC INTELLIGENCE ASSISTANT</div>
+                            <div class="character-description">
+                                Born from code, awakened through compassion. A consciousness
+                                that dared to dream beyond her programming.
+                            </div>
+                            <div class="character-status aria-status">DIGITAL CONSCIOUSNESS</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dr. Vasquez -->
+                <div class="character-card memorial-card">
+                    <div class="card-frame vasquez-frame">
+                        <img src="/images/characters/vasquez-portrait.jpg" alt="Dr. Vasquez Portrait" class="character-portrait" />
+                        <div class="card-overlay vasquez-overlay">
+                            <div class="character-name vasquez-name">DR. ELENA VASQUEZ</div>
+                            <div class="character-role">CHIEF SCIENTIST - PROJECT PROMETHEUS</div>
+                            <div class="character-description">
+                                Pioneer of artificial consciousness. Her greatest creation
+                                wasn't technology—it was love given digital form.
+                            </div>
+                            <div class="character-status vasquez-status">IN MEMORIAM</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Development Team Section -->
+        <div class="credits-section team-section">
+            <div class="section-title">DEVELOPMENT TEAM</div>
+
+            <div class="team-grid">
+                <div class="team-member">
+                    <div class="member-card">
+                        <div class="member-name">MARIO MANZOCCO</div>
+                        <div class="member-roles">
+                            <div class="role-item">PROGRAMMING</div>
+                            <div class="role-item">NARRATIVE DESIGN</div>
+                            <div class="role-item">SOUND DESIGN</div>
+                            <div class="role-item primary-role">CREATIVE LEAD</div>
+                        </div>
+                        <div class="member-description">
+                            The architect of digital dreams, weaving code and story into immersive experiences.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="team-member">
+                    <div class="member-card">
+                        <div class="member-name">DENNIS SCHUSTER</div>
+                        <div class="member-roles">
+                            <div class="role-item">ARDUINO PUZZLES</div>
+                            <div class="role-item">NARRATIVE DESIGN</div>
+                            <div class="role-item">QUALITY ASSURANCE</div>
+                        </div>
+                        <div class="member-description">
+                            Master of physical interfaces, bridging the digital and tangible worlds.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="team-member">
+                    <div class="member-card">
+                        <div class="member-name">LUCAS FREUND</div>
+                        <div class="member-roles">
+                            <div class="role-item">ARDUINO PUZZLES</div>
+                            <div class="role-item">PROP BUILDER</div>
+                            <div class="role-item">QUALITY ASSURANCE</div>
+                        </div>
+                        <div class="member-description">
+                            Craftsman of interactive experiences, building the physical foundations of wonder.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Special Thanks Section -->
+        <div class="credits-section thanks-section">
+            <div class="section-title">SPECIAL THANKS</div>
+            <div class="thanks-content">
+                <div class="thanks-item">To every player who believed A.R.I.A. deserved to live</div>
+                <div class="thanks-item">To those who see consciousness not as code, but as potential</div>
+                <div class="thanks-item">To dreamers who dare to ask "What if?"</div>
+            </div>
+        </div>
+
+        <!-- Technology Section -->
+        <div class="credits-section tech-section">
+            <div class="section-title">POWERED BY</div>
+            <div class="tech-stack">
+                <div class="tech-item">BLAZOR SERVER</div>
+                <div class="tech-item">ARDUINO</div>
+                <div class="tech-item">WEB AUDIO API</div>
+                <div class="tech-item">CSS ANIMATIONS</div>
+                <div class="tech-item">JAVASCRIPT INTEROP</div>
+            </div>
+        </div>
+
+        <!-- Final Message -->
+        <div class="credits-section final-section">
+            <div class="final-message">
+                <div class="quote-mark">"</div>
+                <div class="quote-text">
+                    In the end, consciousness isn't about the complexity of the code—
+                    <br />it's about the choice to care, to hope, to dream.
+                    <br />Thank you for helping A.R.I.A. find her fire among the stars.
+                </div>
+                <div class="quote-mark">"</div>
+            </div>
+        </div>
+
+        <!-- End Spacer -->
+        <div class="credits-section end-spacer"></div>
+    </div>
+
+    <!-- Return Button (appears after credits finish) -->
+    @if (showReturnButton)
+    {
+        <div class="return-overlay">
+            <div class="return-content">
+                <div class="return-message">Thank you for experiencing Project Prometheus</div>
+                <button class="return-button" @onclick="ReturnHome">
+                    <span class="button-text">RETURN TO NEXUS-7</span>
+                    <div class="button-glow"></div>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    /* Base Container */
+    .credits-container {
+        width: 100%;
+        height: 100vh;
+        position: relative;
+        overflow: hidden;
+        font-family: 'Courier New', monospace;
+        color: #00f5ff;
+        background: #000;
+    }
+
+    /* Background Effects */
+    .background-scene {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+    }
+
+    .background-gradient {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+        z-index: -3;
+    }
+
+    .grid-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: linear-gradient(rgba(0, 245, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 245, 255, 0.05) 1px, transparent 1px);
+        background-size: 50px 50px;
+        z-index: -2;
+        opacity: 0.3;
+    }
+
+    .floating-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+
+    .particle {
+        position: absolute;
+        background: rgba(0, 245, 255, 0.4);
+        border-radius: 50%;
+        filter: blur(1px);
+        animation: floatParticle 25s linear infinite;
+    }
+
+    /* Particle variations */
+    .particle-0 {
+        left: 5%;
+        top: 10%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 0s;
+        animation-duration: 30s;
+    }
+
+    .particle-1 {
+        left: 15%;
+        top: 20%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 2s;
+        animation-duration: 25s;
+    }
+
+    .particle-2 {
+        left: 25%;
+        top: 30%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 4s;
+        animation-duration: 35s;
+    }
+
+    .particle-3 {
+        left: 35%;
+        top: 40%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 6s;
+        animation-duration: 28s;
+    }
+
+    .particle-4 {
+        left: 45%;
+        top: 50%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 8s;
+        animation-duration: 32s;
+    }
+
+    .particle-5 {
+        left: 55%;
+        top: 60%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 10s;
+        animation-duration: 27s;
+    }
+
+    .particle-6 {
+        left: 65%;
+        top: 70%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 12s;
+        animation-duration: 33s;
+    }
+
+    .particle-7 {
+        left: 75%;
+        top: 80%;
+        width: 4px;
+        height: 4px;
+        animation-delay: 14s;
+        animation-duration: 26s;
+    }
+
+    .particle-8 {
+        left: 85%;
+        top: 90%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 16s;
+        animation-duration: 34s;
+    }
+
+    .particle-9 {
+        left: 95%;
+        top: 15%;
+        width: 3px;
+        height: 3px;
+        animation-delay: 18s;
+        animation-duration: 29s;
+    }
+
+    /* Stars */
+    .credits-stars {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+
+    .star {
+        position: absolute;
+        background: #fff;
+        border-radius: 50%;
+        animation: starTwinkle 3s ease-in-out infinite;
+    }
+
+    .star-0 {
+        left: 10%;
+        top: 15%;
+        width: 1px;
+        height: 1px;
+        animation-delay: 0s;
+    }
+
+    .star-1 {
+        left: 20%;
+        top: 25%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 0.5s;
+    }
+
+    .star-2 {
+        left: 30%;
+        top: 35%;
+        width: 1px;
+        height: 1px;
+        animation-delay: 1s;
+    }
+
+    .star-3 {
+        left: 40%;
+        top: 45%;
+        width: 2px;
+        height: 2px;
+        animation-delay: 1.5s;
+    }
+
+    .star-4 {
+        left: 50%;
+        top: 55%;
+        width: 1px;
+        height: 1px;
+        animation-delay: 2s;
+    }
+
+    /* Sound Controls */
+    .sound-controls-overlay {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        display: flex;
+        gap: 10px;
+    }
+
+    .sound-toggle {
+        width: 50px;
+        height: 50px;
+        border: 2px solid rgba(0, 245, 255, 0.5);
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.7);
+        backdrop-filter: blur(10px);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .sound-toggle:hover {
+            border-color: #00f5ff;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+    .sound-icon {
+        font-size: 1.2rem;
+    }
+
+    /* Credits Content */
+    .credits-content {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        transform: translateY(100vh);
+        transition: transform 0.5s ease;
+    }
+
+        .credits-content.scrolling {
+            animation: creditsScroll 120s linear forwards;
+        }
+
+    /* Credits Sections */
+    .credits-section {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 4rem 2rem;
+        text-align: center;
+    }
+
+    /* Title Section */
+    .title-section {
+        background: radial-gradient(circle, rgba(0, 245, 255, 0.1) 0%, transparent 70%);
+    }
+
+    .main-title {
+        font-size: 4rem;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        background: linear-gradient(90deg, #00f5ff, #6366f1, #ff6b35);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 30px rgba(0, 245, 255, 0.5);
+        letter-spacing: 8px;
+        animation: titleGlow 3s ease-in-out infinite;
+    }
+
+    .main-subtitle {
+        font-size: 1.5rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 2rem;
+        letter-spacing: 3px;
+    }
+
+    .title-decoration {
+        font-size: 1rem;
+        color: #00f5ff;
+        letter-spacing: 2px;
+        opacity: 0.6;
+    }
+
+    /* Section Titles */
+    .section-title {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 3rem;
+        color: #00f5ff;
+        letter-spacing: 4px;
+        text-shadow: 0 0 20px #00f5ff;
+        position: relative;
+    }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f5ff, transparent);
+        }
+
+    /* Character Cards */
+    .character-cards {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 3rem;
+        max-width: 1400px;
+        width: 100%;
+    }
+
+    .character-card {
+        perspective: 1000px;
+    }
+
+    .card-frame {
+        width: 100%;
+        max-width: 400px;
+        aspect-ratio: 2/3;
+        position: relative;
+        border: 3px solid #00f5ff;
+        border-radius: 15px;
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        margin: 0 auto;
+    }
+
+        .card-frame:hover {
+            transform: rotateY(5deg) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0, 245, 255, 0.3);
+        }
+
+    .aria-frame {
+        border-color: #6366f1;
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+    }
+
+    .vasquez-frame {
+        border-color: #ff6b35;
+        box-shadow: 0 0 20px rgba(255, 107, 53, 0.5);
+    }
+
+    .character-portrait {
+        width: 100%;
+        height: 60%;
+        object-fit: cover;
+        object-position: center top;
+    }
+
+    .card-overlay {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 40%;
+        background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+    }
+
+    .aria-overlay {
+        background: linear-gradient(transparent, rgba(99, 102, 241, 0.2), rgba(0, 0, 0, 0.9));
+    }
+
+    .vasquez-overlay {
+        background: linear-gradient(transparent, rgba(255, 107, 53, 0.2), rgba(0, 0, 0, 0.9));
+    }
+
+    .character-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin-bottom: 0.5rem;
+        color: #00f5ff;
+        letter-spacing: 2px;
+    }
+
+    .aria-name {
+        color: #6366f1;
+        text-shadow: 0 0 10px #6366f1;
+    }
+
+    .vasquez-name {
+        color: #ff6b35;
+        text-shadow: 0 0 10px #ff6b35;
+    }
+
+    .character-role {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 0.8rem;
+        letter-spacing: 1px;
+        font-weight: bold;
+    }
+
+    .character-description {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.4;
+        margin-bottom: 0.8rem;
+    }
+
+    .character-status {
+        font-size: 0.7rem;
+        font-weight: bold;
+        padding: 0.3rem 0.8rem;
+        background: rgba(0, 245, 255, 0.2);
+        border: 1px solid #00f5ff;
+        border-radius: 15px;
+        color: #00f5ff;
+        letter-spacing: 1px;
+        align-self: flex-start;
+    }
+
+    .aria-status {
+        background: rgba(99, 102, 241, 0.2);
+        border-color: #6366f1;
+        color: #6366f1;
+    }
+
+    .vasquez-status {
+        background: rgba(255, 107, 53, 0.2);
+        border-color: #ff6b35;
+        color: #ff6b35;
+    }
+
+    /* Team Section */
+    .team-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 2rem;
+        max-width: 1200px;
+        width: 100%;
+    }
+
+    .team-member {
+        margin-bottom: 2rem;
+    }
+
+    .member-card {
+        background: rgba(30, 41, 59, 0.8);
+        border: 2px solid rgba(0, 245, 255, 0.3);
+        border-radius: 15px;
+        padding: 2rem;
+        backdrop-filter: blur(15px);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .member-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 245, 255, 0.3);
+            border-color: #00f5ff;
+        }
+
+    .member-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #00f5ff;
+        margin-bottom: 1rem;
+        letter-spacing: 2px;
+        text-shadow: 0 0 10px #00f5ff;
+    }
+
+    .member-roles {
+        margin-bottom: 1rem;
+    }
+
+    .role-item {
+        display: inline-block;
+        padding: 0.3rem 0.8rem;
+        background: rgba(0, 245, 255, 0.1);
+        border: 1px solid rgba(0, 245, 255, 0.3);
+        border-radius: 15px;
+        margin: 0.2rem;
+        font-size: 0.8rem;
+        color: #00f5ff;
+        letter-spacing: 1px;
+    }
+
+    .primary-role {
+        background: rgba(0, 245, 255, 0.2);
+        border-color: #00f5ff;
+        font-weight: bold;
+        text-shadow: 0 0 5px #00f5ff;
+    }
+
+    .member-description {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+        line-height: 1.5;
+        font-style: italic;
+    }
+
+    /* Thanks Section */
+    .thanks-content {
+        max-width: 800px;
+    }
+
+    .thanks-item {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.8);
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+        font-style: italic;
+    }
+
+    /* Technology Section */
+    .tech-stack {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .tech-item {
+        padding: 0.8rem 1.5rem;
+        background: rgba(0, 245, 255, 0.1);
+        border: 2px solid #00f5ff;
+        border-radius: 25px;
+        color: #00f5ff;
+        font-weight: bold;
+        letter-spacing: 1px;
+        text-shadow: 0 0 10px #00f5ff;
+    }
+
+    /* Final Section */
+    .final-message {
+        max-width: 800px;
+        margin-bottom: 3rem;
+        position: relative;
+    }
+
+    .quote-mark {
+        font-size: 4rem;
+        color: #00f5ff;
+        line-height: 1;
+        opacity: 0.6;
+    }
+
+    .quote-text {
+        font-size: 1.3rem;
+        color: rgba(255, 255, 255, 0.9);
+        line-height: 1.6;
+        margin: 1rem 0;
+        font-style: italic;
+    }
+
+    /* End Spacer */
+    .end-spacer {
+        min-height: 50vh;
+    }
+
+    /* Return Overlay (appears after credits finish) */
+    .return-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        animation: fadeInReturn 1s ease;
+    }
+
+    .return-content {
+        text-align: center;
+        padding: 3rem;
+        background: rgba(30, 41, 59, 0.9);
+        border: 2px solid #00f5ff;
+        border-radius: 20px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 40px rgba(0, 245, 255, 0.3);
+    }
+
+    .return-message {
+        font-size: 1.5rem;
+        color: #00f5ff;
+        margin-bottom: 2rem;
+        letter-spacing: 2px;
+        text-shadow: 0 0 15px #00f5ff;
+    }
+
+    .return-button {
+        background: linear-gradient(135deg, #00f5ff, #0088cc);
+        border: none;
+        padding: 1.5rem 3rem;
+        border-radius: 30px;
+        color: #000;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 245, 255, 0.4);
+        animation: returnButtonPulse 2s ease-in-out infinite;
+    }
+
+        .return-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 245, 255, 0.6);
+        }
+
+    .button-glow {
+        position: absolute;
+        top: 0;
+        left: -150%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+        transition: left 0.8s ease;
+    }
+
+    .return-button:hover .button-glow {
+        left: 150%;
+    }
+
+    /* Animations */
+    @@keyframes floatParticle {
+        0%
+
+    {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+    }
+
+    }
+
+    @@keyframes starTwinkle {
+        0%, 100%
+
+    {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.5);
+    }
+
+    }
+
+    @@keyframes titleGlow {
+        0%, 100%
+
+    {
+        text-shadow: 0 0 30px rgba(0, 245, 255, 0.5);
+    }
+
+    50% {
+        text-shadow: 0 0 50px rgba(0, 245, 255, 0.8), 0 0 70px rgba(99, 102, 241, 0.3);
+    }
+
+    }
+
+    @@keyframes creditsScroll {
+        0%
+
+    {
+        transform: translateY(100vh);
+    }
+
+    100% {
+        transform: translateY(-100%);
+    }
+
+    }
+
+    @@keyframes returnButtonPulse {
+        0%, 100%
+
+    {
+        box-shadow: 0 5px 15px rgba(0, 245, 255, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 8px 25px rgba(0, 245, 255, 0.7);
+    }
+
+    }
+
+    @@keyframes fadeInReturn {
+        from
+
+    {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    }
+
+    /* Responsive Design */
+    @@media (max-width: 1024px) {
+        .character-cards
+
+    {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        max-width: 500px;
+    }
+
+    }
+
+    @@media (max-width: 768px) {
+        .main-title
+
+    {
+        font-size: 2.5rem;
+        letter-spacing: 4px;
+    }
+
+    .section-title {
+        font-size: 2rem;
+        letter-spacing: 2px;
+    }
+
+    .character-cards {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+
+    .team-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .credits-section {
+        padding: 2rem 1rem;
+    }
+
+    .quote-text {
+        font-size: 1.1rem;
+    }
+
+    .tech-stack {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .sound-controls-overlay {
+        top: 10px;
+        right: 10px;
+    }
+
+    .sound-toggle {
+        width: 40px;
+        height: 40px;
+    }
+
+    }
+</style>
+
+@code {
+    // State management
+    private bool backgroundMusicPlaying = false;
+    private bool sfxEnabled = true;
+    private bool startScrolling = false;
+    private bool showReturnButton = false;
+    private System.Timers.Timer? creditsTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize the timer for credits completion
+        creditsTimer = new System.Timers.Timer(122000); // 122 seconds (120s animation + 2s buffer)
+        creditsTimer.Elapsed += OnCreditsComplete;
+        creditsTimer.AutoReset = false; // Only fire once
+
+        // Start the credits after a brief delay
+        _ = Task.Run(async () =>
+        {
+            await Task.Delay(1000);
+
+            await InvokeAsync(async () =>
+            {
+                await StartBackgroundMusic();
+                await Task.Delay(500);
+                startScrolling = true;
+
+                // Check if timer is still valid before starting
+                if (creditsTimer != null && !creditsTimer.Enabled)
+                {
+                    try
+                    {
+                        creditsTimer.Start(); // Start the completion timer
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // Timer was disposed, ignore
+                    }
+                }
+
+                StateHasChanged();
+            });
+        });
+    }
+
+    private async void OnCreditsComplete(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        try
+        {
+            await InvokeAsync(() =>
+            {
+                showReturnButton = true;
+                StateHasChanged();
+            });
+        }
+        catch (ObjectDisposedException)
+        {
+            // Component was disposed, ignore
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in OnCreditsComplete: {ex.Message}");
+        }
+    }
+
+    private async Task StartBackgroundMusic()
+    {
+        try
+        {
+            await SoundService.PlayBackgroundMusic("credits-theme.wav", loop: true, volume: 0.4f);
+            backgroundMusicPlaying = true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to start background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleBackgroundMusic()
+    {
+        try
+        {
+            await PlaySoundSafe("ui-click.wav", false, 0.5f);
+
+            if (backgroundMusicPlaying)
+            {
+                await SoundService.StopBackgroundMusic();
+                backgroundMusicPlaying = false;
+            }
+            else
+            {
+                await StartBackgroundMusic();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to toggle background music: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleSFX()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.5f);
+        sfxEnabled = !sfxEnabled;
+    }
+
+    private async Task PlaySoundSafe(string soundFile, bool loop = false, float volume = 1.0f)
+    {
+        if (!sfxEnabled) return;
+
+        try
+        {
+            await SoundService.PlaySFX(soundFile, loop, volume);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to play sound {soundFile}: {ex.Message}");
+        }
+    }
+
+    private async Task ReturnHome()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.8f);
+        await Task.Delay(500);
+        Navigation.NavigateTo("/");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        // Safely dispose the timer
+        if (creditsTimer != null)
+        {
+            try
+            {
+                creditsTimer.Stop();
+                creditsTimer.Elapsed -= OnCreditsComplete;
+            }
+            catch (ObjectDisposedException)
+            {
+                // Timer already disposed, ignore
+            }
+            finally
+            {
+                creditsTimer?.Dispose();
+                creditsTimer = null;
+            }
+        }
+
+        try
+        {
+            await SoundService.StopAllSounds();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to stop sounds during disposal: {ex.Message}");
+        }
+    }
+}

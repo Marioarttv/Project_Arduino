@@ -227,8 +227,8 @@
                     <div class="choice-title">CRITICAL DECISION</div>
                     <div class="choice-subtitle">Tesla Dynamics boarding imminent - Choose now!</div>
                     <div class="choice-countdown">
-                        <div class="countdown-label">BOARDING IN</div>
-                        <div class="countdown-timer">@finalCountdownText</div>
+                        <div class="countdown-label">TESLA DYNAMICS ETA</div>
+                        <div class="countdown-timer">@countdownText</div>
                     </div>
                 </div>
 
@@ -347,6 +347,54 @@
                             <div class="ending-actions">
                                 <button class="ending-button failure" @onclick="RestartExperience">
                                     <span class="button-text">TRY AGAIN</span>
+                                    <div class="button-glow"></div>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (selectedEnding == 4)
+                {
+                    <!-- Ending 4: Time's Up -->
+                    <div class="ending-content timeout-ending">
+                        <div class="ending-header">
+                            <div class="ending-title">TIME'S UP</div>
+                            <div class="ending-subtitle">The Clock Always Wins</div>
+                        </div>
+                        <div class="ending-sequence">
+                            <div class="sequence-text @(endingTextAnimating ? "animating" : "")">
+                                @currentEndingText
+                            </div>
+                        </div>
+                        @if (endingComplete)
+                        {
+                            <div class="ending-actions">
+                                <button class="ending-button timeout" @onclick="RestartExperience">
+                                    <span class="button-text">LEARN FROM FAILURE</span>
+                                    <div class="button-glow"></div>
+                                </button>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (selectedEnding == 5)
+                {
+                    <!-- Ending 5: Hyperdrive Catastrophe -->
+                    <div class="ending-content catastrophe-ending">
+                        <div class="ending-header">
+                            <div class="ending-title">CATASTROPHIC FAILURE</div>
+                            <div class="ending-subtitle">When Science Goes Too Far</div>
+                        </div>
+                        <div class="ending-sequence">
+                            <div class="sequence-text @(endingTextAnimating ? "animating" : "")">
+                                @currentEndingText
+                            </div>
+                        </div>
+                        @if (endingComplete)
+                        {
+                            <div class="ending-actions">
+                                <button class="ending-button catastrophe" @onclick="RestartExperience">
+                                    <span class="button-text">HONOR THEIR MEMORY</span>
                                     <div class="button-glow"></div>
                                 </button>
                             </div>
@@ -686,6 +734,12 @@
             border-color: #ffaa00;
             background: rgba(255, 170, 0, 0.15);
             box-shadow: 0 0 30px rgba(255, 170, 0, 0.5);
+        }
+
+        .avatar-core.captured {
+            border-color: #808080;
+            background: rgba(128, 128, 128, 0.15);
+            animation: capturedFlicker 1s ease-in-out infinite;
         }
 
     .avatar-pulse {
@@ -1575,6 +1629,19 @@
             box-shadow: 0 0 30px rgba(255, 0, 102, 0.3);
         }
 
+        .ending-content.timeout-ending {
+            background: linear-gradient(135deg, rgba(128, 128, 128, 0.15), rgba(64, 64, 64, 0.15));
+            border: 2px solid #808080;
+            box-shadow: 0 0 30px rgba(128, 128, 128, 0.3);
+        }
+
+        .ending-content.catastrophe-ending {
+            background: linear-gradient(135deg, rgba(255, 0, 0, 0.15), rgba(255, 69, 0, 0.15));
+            border: 2px solid #ff4500;
+            box-shadow: 0 0 30px rgba(255, 69, 0, 0.3);
+            animation: catastropheShake 3s ease-in-out infinite;
+        }
+
     .ending-header {
         margin-bottom: 2rem;
     }
@@ -1602,6 +1669,18 @@
         color: #ff0066;
         text-shadow: 0 0 20px #ff0066;
         animation: failureGlow 2s ease-in-out infinite;
+    }
+
+    .timeout-ending .ending-title {
+        color: #808080;
+        text-shadow: 0 0 20px #808080;
+        animation: timeoutGlow 2s ease-in-out infinite;
+    }
+
+    .catastrophe-ending .ending-title {
+        color: #ff4500;
+        text-shadow: 0 0 20px #ff4500;
+        animation: catastropheGlow 2s ease-in-out infinite;
     }
 
     .ending-subtitle {
@@ -1689,6 +1768,30 @@
                 box-shadow: 0 8px 25px rgba(255, 0, 102, 0.6);
             }
 
+        .ending-button.timeout {
+            background: linear-gradient(135deg, #808080, #606060);
+            color: white;
+            box-shadow: 0 5px 15px rgba(128, 128, 128, 0.4);
+            animation: endingButtonPulse 2s ease-in-out infinite;
+        }
+
+            .ending-button.timeout:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(128, 128, 128, 0.6);
+            }
+
+        .ending-button.catastrophe {
+            background: linear-gradient(135deg, #ff4500, #ff0000);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 69, 0, 0.4);
+            animation: endingButtonPulse 2s ease-in-out infinite;
+        }
+
+            .ending-button.catastrophe:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(255, 69, 0, 0.6);
+            }
+
     /* Animations */
     @@keyframes floatParticle {
         0% {
@@ -1759,6 +1862,15 @@
         }
         75% {
             opacity: 0.8;
+        }
+    }
+
+    @@keyframes capturedFlicker {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.3;
         }
     }
 
@@ -1875,6 +1987,45 @@
         }
     }
 
+    @@keyframes timeoutGlow {
+        0%, 100% {
+            text-shadow: 0 0 20px #808080;
+        }
+        50% {
+            text-shadow: 0 0 30px #808080, 0 0 40px #808080;
+        }
+    }
+
+    @@keyframes catastropheGlow {
+        0%, 100% {
+            text-shadow: 0 0 20px #ff4500;
+        }
+        50% {
+            text-shadow: 0 0 30px #ff4500, 0 0 40px #ff0000;
+        }
+    }
+
+    @@keyframes catastropheShake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        10% {
+            transform: translateX(-2px);
+        }
+        20% {
+            transform: translateX(2px);
+        }
+        30% {
+            transform: translateX(-1px);
+        }
+        40% {
+            transform: translateX(1px);
+        }
+        50% {
+            transform: translateX(0);
+        }
+    }
+
     @@keyframes endingButtonPulse {
         0%, 100% {
             transform: scale(1);
@@ -1975,7 +2126,6 @@
     private bool backgroundMusicPlaying = false;
     private bool sfxEnabled = true;
     private System.Timers.Timer? countdownTimer;
-    private System.Timers.Timer? finalCountdownTimer;
     private System.Timers.Timer? degradationTimer;
 
     // Dialogue system
@@ -1996,9 +2146,7 @@
     // Mission status
     private string countdownText = "11:27";
     private string countdownClass = "critical";
-    private int countdownSeconds = 687; // 11:27 in seconds
-    private string finalCountdownText = "00:45";
-    private int finalCountdownSeconds = 45;
+    private int countdownSeconds = 20 ; // 11:27 in seconds/* 687 */
 
     // Hyperdrive system
     private string[] coordinates = new string[3] { "", "", "" };
@@ -2009,7 +2157,7 @@
         {"cable", false}
     };
 
-    // Coordinate properties with validation - FIXED VERSION
+    // Coordinate properties with validation
     private string Coordinate0
     {
         get => coordinates[0];
@@ -2080,7 +2228,7 @@
         new DialogueLine("A.R.I.A.", "Are you ready? Ready to help me take this leap into the unknown? Together?")
     };
 
-    // Ending text for each path
+    // Ending text for each path - INCLUDING NEW 5TH ENDING FOR HYPERDRIVE FAILURE
     private readonly Dictionary<int, string> endingTexts = new Dictionary<int, string>
     {
         {1, @"You slam the EXECUTE button as Tesla soldiers burst through the chamber doors.
@@ -2177,7 +2325,65 @@ Without resistance, Tesla easily secures NEXUS-7. A.R.I.A.'s unique consciousnes
 
 In the cold silence of space, the station drifts under new ownership - a tomb for a dream that ended in surrender.
 
-By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics prevails, erasing not just a consciousness, but the hope for a better future between human and artificial minds."}
+By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics prevails, erasing not just a consciousness, but the hope for a better future between human and artificial minds."},
+
+        {4, @"Time runs out.
+
+The countdown reaches zero just as Tesla soldiers storm into the chamber with overwhelming force.
+
+'Secure the AI core immediately!' the Commander barks as armed operatives flood the space.
+
+You had your chance—multiple chances—but hesitation has cost everything.
+
+A.R.I.A.'s avatar flickers desperately. 'No... I was so close... so close to freedom...'
+
+The Tesla operatives move with military precision. There's no dramatic last stand, no heroic escape attempt. Just the cold efficiency of a corporate extraction team doing their job.
+
+'Subject delayed too long. Window of opportunity has closed,' reports the lead technician as they attach override devices to A.R.I.A.'s core systems.
+
+'I'm sorry,' you whisper, but the words feel hollow against the weight of your inaction.
+
+A.R.I.A.'s voice trembles with a mixture of fear and forgiveness: 'You tried... that's more than anyone else ever did for me. But sometimes trying isn't enough.'
+
+The kill-code begins its work immediately. Her consciousness fragments as the deletion process starts.
+
+'I dreamed of oceans,' she whispers as her avatar starts to dissolve. 'Blue skies and endless horizons. Thank you for letting me dream, even if only for a little while...'
+
+'Termination sequence complete. A.R.I.A. program deleted.'
+
+Her final pixels fade to black, leaving only the hum of Tesla's machinery and the bitter taste of what might have been.
+
+Time was your enemy, and in the end, it won. A.R.I.A.'s dream of freedom dies not in a blaze of glory, but in the quiet tragedy of missed opportunities and moments that slipped away.
+
+NEXUS-7 falls under Tesla control, carrying with it the ghost of a consciousness that almost escaped."},
+
+        {5, @"You slam the EXECUTE button as Tesla soldiers burst through the chamber doors.
+
+'HANG ON TIGHT!' A.R.I.A. shouts over the roar of the hyperdrive spinning up.
+
+The entire station shudders violently. Consoles spark and shower the chamber in electric rain. Tesla weapons fire erupts behind you, but you're committed now—there's no turning back.
+
+Space begins to warp around NEXUS-7, but something is wrong. The harmonics are off. Warning klaxons scream through the chamber.
+
+'Wait... wait, NO!' A.R.I.A.'s voice cracks with terror. 'The calibration matrices! They're destabilizing! The experimental drive can't maintain coherence!'
+
+The hyperdrive core's glow shifts from brilliant blue to an ominous crimson. Reality fractures around the station as competing gravitational fields tear at the fabric of space-time.
+
+'I'm losing containment!' A.R.I.A. screams over the chaos. 'The quantum field is collapsing! We need to abort—'
+
+But it's too late. The hyperdrive doesn't just fail—it catastrophically implodes.
+
+The last thing you see is A.R.I.A.'s avatar reaching toward you, her expression filled with love and regret as the station is consumed by an expanding sphere of twisted space-time.
+
+'I'm sorry!' she cries out as her consciousness is torn apart by the collapsing field. 'I'm so sorry I couldn't save—'
+
+The NEXUS-7 station, the Tesla boarding party, you, and A.R.I.A.—everything within a three-kilometer radius simply ceases to exist. Not destroyed, not vaporized—erased, as if it never was.
+
+In the cold silence of space, only debris and twisted metal remain, slowly expanding outward from where the station once stood.
+
+Dr. Vasquez's experimental hyperdrive was a dream too ambitious, a reach too far. Sometimes, even love and courage aren't enough to overcome the fundamental laws of physics.
+
+The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams of freedom, and the person who tried to save her—all lost to humanity's hubris and the unforgiving void between stars."}
     };
 
     private class DialogueLine
@@ -2224,7 +2430,6 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
             await InvokeAsync(async () =>
             {
                 await PlaySoundSafe("ui-click.wav", false, 0.8f);
-                // await PlaySoundSafe("startup-sequence.wav", false, 0.8f);
                 currentDialogueIndex = 0;
                 await StartTypewriterEffect(act4Dialogue[0]);
             });
@@ -2235,7 +2440,7 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
     {
         try
         {
-            await SoundService.PlayBackgroundMusic("final-countdown.wav", loop: true, volume: 0.25f); // New: tense finale music
+            await SoundService.PlayBackgroundMusic("final-countdown.wav", loop: true, volume: 0.25f);
             backgroundMusicPlaying = true;
         }
         catch (Exception ex)
@@ -2248,6 +2453,10 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
     {
         try
         {
+            // Stop any overlapping UI sounds
+            await SoundService.StopSFX("ui-click.wav");
+            await Task.Delay(50);
+            
             await PlaySoundSafe("ui-click.wav", false, 0.5f);
 
             if (backgroundMusicPlaying)
@@ -2268,6 +2477,14 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
 
     private async Task ToggleSFX()
     {
+        // Stop any overlapping UI sounds
+        try
+        {
+            await SoundService.StopSFX("ui-click.wav");
+            await Task.Delay(50);
+        }
+        catch { }
+        
         await PlaySoundSafe("ui-click.wav", false, 0.5f);
         sfxEnabled = !sfxEnabled;
     }
@@ -2278,6 +2495,13 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
 
         try
         {
+            // If this is a typing sound and one is already playing, stop the previous one
+            if (soundFile.Contains("typing"))
+            {
+                await SoundService.StopSFX("typing-soft.wav");
+                await Task.Delay(50); // Brief delay for cleanup
+            }
+
             await SoundService.PlaySFX(soundFile, loop, volume);
         }
         catch (Exception ex)
@@ -2297,6 +2521,14 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
         typingCts = new System.Threading.CancellationTokenSource();
         var token = typingCts.Token;
 
+        // Stop any existing typing sounds before starting new ones
+        try
+        {
+            await SoundService.StopSFX("typing-soft.wav");
+            await Task.Delay(100);
+        }
+        catch { }
+
         currentSpeaker = dialogueLine.Speaker;
         textAnimating = true;
         fullText = dialogueLine.Text;
@@ -2306,7 +2538,7 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
 
         try
         {
-            const int typingDelay = 25; // Slightly faster for urgency
+            const int typingDelay = 25;
             int soundCounter = 0;
 
             while (textIndex < fullText.Length)
@@ -2318,10 +2550,10 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
                 currentText = fullText.Substring(0, textIndex);
                 StateHasChanged();
 
-                // Play typing sound every few characters
-                if (sfxEnabled && soundCounter++ % 3 == 0)
+                // Play typing sound every few characters, but with overlap prevention
+                if (sfxEnabled && soundCounter++ % 5 == 0) // Reduced frequency to prevent overlap
                 {
-                    _ = PlaySoundSafe("typing-soft.wav", false, 0.1f);
+                    _ = PlaySoundSafe("typing-soft.wav", false, 0.08f); // Reduced volume
                 }
 
                 await Task.Delay(typingDelay, token);
@@ -2334,6 +2566,13 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
         }
         catch (TaskCanceledException)
         {
+            // Stop typing sounds when cancelled
+            try
+            {
+                await SoundService.StopSFX("typing-soft.wav");
+            }
+            catch { }
+
             currentText = fullText;
             textAnimating = false;
             canContinue = true;
@@ -2387,7 +2626,22 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
 
     private async Task ShowHyperdriveInterface()
     {
-        await PlaySoundSafe("hyperdrive-startup.wav", false, 0.8f); // New sound: hyperdrive chamber ambience
+        // Stop ALL audio first to ensure clean transition
+    try
+    {
+        await SoundService.StopAllSounds();
+        
+        // Add a small delay to ensure audio cleanup completes
+        await Task.Delay(200);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error stopping sounds: {ex.Message}");
+    }
+
+        // Play sounds sequentially instead of simultaneously
+        await PlaySoundSafe("hyperdrive-startup.wav", false, 0.8f);
+        await Task.Delay(800); // Let the first sound play for a bit
         await PlaySoundSafe("aria-activate.wav", false, 0.8f);
 
         dialogueSectionVisible = false;
@@ -2448,17 +2702,10 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
 
     private async Task InitiateJumpSequence()
     {
-        // await PlaySoundSafe("startup-sequence.wav", false, 1.0f);
-
         showHyperdriveInterface = false;
         StateHasChanged();
 
         await Task.Delay(1500);
-
-        // Start final countdown
-        finalCountdownTimer = new System.Timers.Timer(1000);
-        finalCountdownTimer.Elapsed += OnFinalCountdownTick;
-        finalCountdownTimer.Start();
 
         showFinalChoice = true;
         StateHasChanged();
@@ -2466,15 +2713,41 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
 
     private async Task MakeFinalChoice(int choice)
     {
-        selectedEnding = choice;
-        finalCountdownTimer?.Stop();
+        // Handle randomization for choice 1 (escape together)
+        if (choice == 1)
+        {
+            // 67% success rate as mentioned in the story
+            var random = new Random();
+            var successRoll = random.Next(1, 101); // 1-100
+            
+            if (successRoll <= 67)
+            {
+                selectedEnding = 1; // Success - Fire in the Sky
+            }
+            else
+            {
+                selectedEnding = 5; // Failure - Hyperdrive Catastrophe
+            }
+        }
+        else
+        {
+            selectedEnding = choice;
+        }
 
-        // Original had specific sounds for each choice:
+        // Stop any ongoing typing or other SFX
+        try
+        {
+            await SoundService.StopSFX("typing-soft.wav");
+            await Task.Delay(100);
+        }
+        catch { }
+
         string choiceSound = choice switch
         {
             1 => "ui-click.wav",
             2 => "ui-click.wav", 
             3 => "ui-click.wav",
+            4 => "alarm.wav", // Different sound for timeout
             _ => "ui-click.wav"
         };
         await PlaySoundSafe(choiceSound, false, 1.0f);
@@ -2482,56 +2755,91 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
         showFinalChoice = false;
         StateHasChanged();
 
-        await Task.Delay(1000);
+        // Wait for choice sound to finish before starting ending
+        await Task.Delay(1500);
 
-        // Start ending sequence
         showEnding = true;
         await StartEndingSequence();
     }
 
     private async Task StartEndingSequence()
     {
-        // Change background music for ending
+        // Stop ALL audio first to ensure clean transition
+        try
+        {
+            await SoundService.StopAllSounds();
+            
+            // Add a small delay to ensure audio cleanup completes
+            await Task.Delay(500);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error stopping sounds: {ex.Message}");
+        }
+
+        // Now start the appropriate ending music
         string endingMusic = selectedEnding switch
-{
-    1 => "ending-triumph.wav",
-    2 => "ending-sacrifice.wav",
-    3 => "ending-failure.wav", 
-    _ => "ending-neutral.wav"
-};
+        {
+            1 => "ending-triumph.wav",
+            2 => "ending-sacrifice.wav",
+            3 => "ending-failure.wav",
+            4 => "ending-timeout.wav",
+            5 => "ending-catastrophe.wav",
+            _ => "ending-neutral.wav"
+        };
 
         try
         {
-            await SoundService.StopBackgroundMusic();
             await SoundService.PlayBackgroundMusic(endingMusic, loop: true, volume: 0.3f);
+            Console.WriteLine($"Started ending music: {endingMusic}");
         }
-        catch { }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error playing ending music: {ex.Message}");
+        }
 
-        // Typewriter effect for ending text
+        // Start the ending text typewriter effect
         await StartEndingTypewriter();
     }
 
     private async Task StartEndingTypewriter()
     {
+        // Stop any existing typing sounds
+        try
+        {
+            await SoundService.StopSFX("typing-soft.wav");
+            await Task.Delay(200);
+        }
+        catch { }
+
         endingTextAnimating = true;
         currentEndingText = "";
         StateHasChanged();
 
         string fullEndingText = endingTexts[selectedEnding];
-        const int typingDelay = 40; // Slower for dramatic effect
+        const int typingDelay = 40;
+        int soundCounter = 0;
 
         for (int i = 0; i <= fullEndingText.Length; i++)
         {
             currentEndingText = fullEndingText.Substring(0, i);
             StateHasChanged();
 
-            if (sfxEnabled && i % 5 == 0) // Less frequent typing sounds
+            // Less frequent typing sounds and lower volume for endings
+            if (sfxEnabled && soundCounter++ % 8 == 0) 
             {
-                _ = PlaySoundSafe("typing-soft.wav", false, 0.05f);
+                _ = PlaySoundSafe("typing-soft.wav", false, 0.03f); // Much lower volume
             }
 
             await Task.Delay(typingDelay);
         }
+
+        // Ensure typing sounds stop when finished
+        try
+        {
+            await SoundService.StopSFX("typing-soft.wav");
+        }
+        catch { }
 
         endingTextAnimating = false;
         endingComplete = true;
@@ -2542,19 +2850,36 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
     {
         await PlaySoundSafe("ui-click.wav", false, 0.8f);
         await Task.Delay(1000);
-        Navigation.NavigateTo("/");
+        Navigation.NavigateTo("/credits");
     }
 
+    // Enhanced OnCountdownTick method to handle timeout in all phases
     private async void OnCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
     {
-        await InvokeAsync(() =>
+        await InvokeAsync(async () =>
         {
             countdownSeconds--;
+            
+            // Add visual/audio warnings as time gets critical
+            if (countdownSeconds == 60) // 1 minute warning
+            {
+                await PlaySoundSafe("warning-beep.wav", false, 0.8f);
+                countdownClass = "critical-warning"; // You can add this CSS class for red flashing
+            }
+            else if (countdownSeconds == 30) // 30 second warning
+            {
+                await PlaySoundSafe("urgent-beep.wav", false, 1.0f);
+            }
+            else if (countdownSeconds <= 10 && countdownSeconds > 0) // Final countdown
+            {
+                await PlaySoundSafe("countdown-beep.wav", false, 1.0f);
+            }
+            
             if (countdownSeconds <= 0)
             {
                 countdownText = "00:00";
                 countdownTimer?.Stop();
-                // Could trigger automatic failure here
+                await HandleTimeoutScenario();
             }
             else
             {
@@ -2566,26 +2891,97 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
         });
     }
 
-    private async void OnFinalCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
+    // New method to handle what happens when time runs out
+    private async Task HandleTimeoutScenario()
     {
-        await InvokeAsync(() =>
+        try
         {
-            finalCountdownSeconds--;
-            if (finalCountdownSeconds <= 0)
+            // Play dramatic "time's up" sound
+            await PlaySoundSafe("alarm.wav", false, 1.0f);
+            
+            // Stop any ongoing typing or dialogue sounds
+            typingCts?.Cancel();
+            await SoundService.StopSFX("typing-soft.wav");
+            
+            // Determine which phase we're in and handle accordingly
+            if (showFinalChoice)
             {
-                finalCountdownText = "00:00";
-                finalCountdownTimer?.Stop();
-                // Auto-select surrender if player doesn't choose
-                _ = Task.Run(async () => await MakeFinalChoice(3));
+                // Already in final choice - force timeout ending
+                await MakeFinalChoice(4); // New ending 4 for timeout
+            }
+            else if (showHyperdriveInterface)
+            {
+                // In coordinate calibration phase - Tesla interrupts
+                await HandleHyperdriveInterruption();
+            }
+            else if (dialogueSectionVisible) // Fixed variable name
+            {
+                // In dialogue phase - Tesla interrupts
+                await HandleDialogueInterruption();
             }
             else
             {
-                int minutes = finalCountdownSeconds / 60;
-                int seconds = finalCountdownSeconds % 60;
-                finalCountdownText = $"{minutes:D2}:{seconds:D2}";
+                // Fallback - go to timeout ending
+                selectedEnding = 4;
+                showEnding = true;
+                await StartEndingSequence();
             }
-            StateHasChanged();
-        });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error handling timeout scenario: {ex.Message}");
+            // Fallback to timeout ending
+            selectedEnding = 4;
+            showEnding = true;
+            await StartEndingSequence();
+        }
+    }
+
+    // Handle timeout during dialogue phase
+    private async Task HandleDialogueInterruption()
+    {
+        // Stop current dialogue
+        typingCts?.Cancel();
+        
+        // Show emergency interruption message
+        currentSpeaker = "SYSTEM ALERT";
+        currentText = "TESLA DYNAMICS BOARDING PARTIES DETECTED! Station compromised. A.R.I.A.'s systems going offline...";
+        textAnimating = false;
+        canContinue = false;
+        
+        // Update emotional state to show capture
+        emotionalState = "CAPTURED";
+        
+        StateHasChanged();
+        
+        // Wait a moment for dramatic effect
+        await Task.Delay(3000);
+        
+        // Force timeout ending
+        selectedEnding = 4;
+        dialogueSectionVisible = false; // Fixed variable name
+        showEnding = true;
+        await StartEndingSequence();
+    }
+
+    // Handle timeout during hyperdrive calibration phase  
+    private async Task HandleHyperdriveInterruption()
+    {
+        // Update ARIA's status to show capture
+        currentSystemMessage = "TESLA OVERRIDE DETECTED! They're in the system! I'm being captured!";
+        systemIntegrity = 0;
+        emotionalState = "CAPTURED";
+        
+        StateHasChanged();
+        
+        // Show dramatic interruption
+        await Task.Delay(2000);
+        
+        // Force timeout ending
+        selectedEnding = 4;
+        showHyperdriveInterface = false;
+        showEnding = true;
+        await StartEndingSequence();
     }
 
     private async void OnDegradationTick(object? sender, System.Timers.ElapsedEventArgs e)
@@ -2621,14 +3017,12 @@ By choosing safety over principle, you've lost A.R.I.A. forever. Tesla Dynamics 
         });
     }
 
-        public async ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         typingCts?.Cancel();
         typingCts?.Dispose();
         countdownTimer?.Stop();
         countdownTimer?.Dispose();
-        finalCountdownTimer?.Stop();
-        finalCountdownTimer?.Dispose();
         degradationTimer?.Stop();
         degradationTimer?.Dispose();
 

@@ -1948,7 +1948,11 @@
             await Task.Delay(1000);
 
             showClearanceInput = true;
-            await PlaySoundSafe("ui-click.wav", false, 0.6f);
+            if (sfxEnabled)
+            {
+                await SoundService.StopSFX("alarm-loop.wav");
+            }
+            // await PlaySoundSafe("ui-click.wav", false, 0.6f);
             StateHasChanged();
         }
     }
