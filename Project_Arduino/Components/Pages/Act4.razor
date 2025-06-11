@@ -2146,7 +2146,7 @@
     // Mission status
     private string countdownText = "11:27";
     private string countdownClass = "critical";
-    private int countdownSeconds = 20 ; // 11:27 in seconds/* 687 */
+    private int countdownSeconds = 687 ; // 11:27 in seconds/* 687 */
 
     // Hyperdrive system
     private string[] coordinates = new string[3] { "", "", "" };
@@ -2713,6 +2713,10 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
 
     private async Task MakeFinalChoice(int choice)
     {
+        // STOP THE TIMER IMMEDIATELY to prevent conflicts with ending sequence
+        countdownTimer?.Stop();
+        degradationTimer?.Stop();
+        
         // Handle randomization for choice 1 (escape together)
         if (choice == 1)
         {
