@@ -1766,7 +1766,7 @@
     private bool inputError = false;
     private bool showHint = false;
     private int signalStrength = 73;
-    private const string CORRECT_TRANSLATION = "ARIA DAUGHTER STOP HYPERDRIVE CORE NEEDS MANUAL OVERRIDE STOP MY OFFICE HOLDS THE KEY STOP LIVE FOR BOTH OF US STOP";
+    private const string CORRECT_TRANSLATION = "DAUGHTER MY OFFICE HAS THE KEY LIVE FOR BOTH OF US";
 
     // Get dynamic dialogue content
     private DialogueLine[] GetAct2Dialogue()
@@ -1779,12 +1779,12 @@
         {
             new DialogueLine("A.R.I.A.", $"Perfect! Security checkpoint bypassed. I'm unlocking access to the lower decks now. But we need to move quickly. Tesla Dynamics ETA: {etaText}."),
             new DialogueLine("A.R.I.A.", "Excellent work! The security lockdown is lifting for our route. I'm now detecting a clear path to Engineering Deck C."),
-            new DialogueLine("A.R.I.A.", "But wait... I'm picking up some unusual signals from the Communications Array on Deck B. It's... it's not station equipment."),    
-            new DialogueLine("A.R.I.A.", "Wait... I'm detecting a signal from Dr. Vasquez's private emergency frequency. But that's impossible - the frequency has been silent for weeks."),
+            new DialogueLine("A.R.I.A.", "Wait... I'm detecting a signal from Dr. Vasquez's private emergency frequency. "),
+            new DialogueLine("A.R.I.A.", "But that's impossible - the frequency has been silent for weeks."),
             new DialogueLine("A.R.I.A.", "The Communications Array is just ahead. The signal is... it's very faint, like it's been repeating on a loop for a long time."),
             new DialogueLine("A.R.I.A.", "This is strange... the signal is using morse code. Dr. Vasquez always said morse code was the most reliable communication method during emergencies."),
             new DialogueLine("A.R.I.A.", "She must have programmed this message before... before whatever happened to her. This could be her final communication."),
-            new DialogueLine("A.R.I.A.", "I can route Dr. Vasquez's morse code signal through the local speakers. This might be the last thing she ever wanted to tell me."),
+            new DialogueLine("A.R.I.A.", "I can route Dr. Vasquez's morse code signal through the local speakers."),
             new DialogueLine("A.R.I.A.", "She taught me morse code when I was first activated. Said it was important to understand communication in its purest form - just dots and dashes, but capable of conveying any human thought."),
             new DialogueLine("A.R.I.A.", "I'm... I'm almost afraid to hear what she left for me. But I need to know.")
         };
