@@ -146,11 +146,17 @@
                                     <div class="station-description">Temperature sensor calibration</div>
                                     <div class="station-status">@(stationStatus["temperature"] ? "CALIBRATED" : "AWAITING INPUT")</div>
                                 </div>
-                                <div class="coordinate-input">
-                                    <label>X-COORDINATE</label>
-                                    <input @bind="Coordinate0" @bind:event="oninput"
-                                           class="coord-input @(stationStatus["temperature"] ? "validated" : "")"
-                                           placeholder="000.000" maxlength="7" />
+                                <div class="station-actions">
+                                    <button class="hint-button" @onclick="@(() => ShowHint("temperature"))" title="Show Station Instructions">
+                                        <span class="hint-icon">💡</span>
+                                        <span class="hint-text">HINT</span>
+                                    </button>
+                                    <div class="coordinate-input">
+                                        <label>X-COORDINATE</label>
+                                        <input @bind="Coordinate0" @bind:event="oninput"
+                                               class="coord-input @(stationStatus["temperature"] ? "validated" : "")"
+                                               placeholder="000.000" maxlength="7" />
+                                    </div>
                                 </div>
                             </div>
 
@@ -161,11 +167,17 @@
                                     <div class="station-description">Light sensor calibration</div>
                                     <div class="station-status">@(stationStatus["light"] ? "CALIBRATED" : "AWAITING INPUT")</div>
                                 </div>
-                                <div class="coordinate-input">
-                                    <label>Y-COORDINATE</label>
-                                    <input @bind="Coordinate1" @bind:event="oninput"
-                                           class="coord-input @(stationStatus["light"] ? "validated" : "")"
-                                           placeholder="000.000" maxlength="7" />
+                                <div class="station-actions">
+                                    <button class="hint-button" @onclick="@(() => ShowHint("light"))" title="Show Station Instructions">
+                                        <span class="hint-icon">🔦</span>
+                                        <span class="hint-text">HINT</span>
+                                    </button>
+                                    <div class="coordinate-input">
+                                        <label>Y-COORDINATE</label>
+                                        <input @bind="Coordinate1" @bind:event="oninput"
+                                               class="coord-input @(stationStatus["light"] ? "validated" : "")"
+                                               placeholder="000.000" maxlength="7" />
+                                    </div>
                                 </div>
                             </div>
 
@@ -176,11 +188,17 @@
                                     <div class="station-description">Cable connection puzzle</div>
                                     <div class="station-status">@(stationStatus["cable"] ? "CALIBRATED" : "AWAITING INPUT")</div>
                                 </div>
-                                <div class="coordinate-input">
-                                    <label>Z-COORDINATE</label>
-                                    <input @bind="Coordinate2" @bind:event="oninput"
-                                           class="coord-input @(stationStatus["cable"] ? "validated" : "")"
-                                           placeholder="000.000" maxlength="7" />
+                                <div class="station-actions">
+                                    <button class="hint-button" @onclick="@(() => ShowHint("cable"))" title="Show Station Instructions">
+                                        <span class="hint-icon">🔧</span>
+                                        <span class="hint-text">HINT</span>
+                                    </button>
+                                    <div class="coordinate-input">
+                                        <label>Z-COORDINATE</label>
+                                        <input @bind="Coordinate2" @bind:event="oninput"
+                                               class="coord-input @(stationStatus["cable"] ? "validated" : "")"
+                                               placeholder="000.000" maxlength="7" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -214,6 +232,30 @@
                                 </div>
                             }
                         </div>
+
+                        <!-- Hint Popup Modal -->
+                        @if (!string.IsNullOrEmpty(currentHintStation))
+                        {
+                            <div class="hint-modal-overlay" @onclick="CloseHint">
+                                <div class="hint-modal" @onclick:stopPropagation="true">
+                                    <div class="hint-modal-header">
+                                        <div class="hint-modal-title">
+                                            <span class="hint-modal-icon">@GetHintIcon(currentHintStation)</span>
+                                            @GetHintTitle(currentHintStation)
+                                        </div>
+                                        <button class="hint-close-button" @onclick="CloseHint">✕</button>
+                                    </div>
+                                    <div class="hint-modal-content">
+                                        @((MarkupString)GetHintContent(currentHintStation))
+                                    </div>
+                                    <div class="hint-modal-footer">
+                                        <button class="hint-close-button-main" @onclick="CloseHint">
+                                            <span class="button-text">UNDERSTOOD</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -1167,6 +1209,188 @@
             box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
         }
 
+    .station-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .hint-button {
+        background: linear-gradient(135deg, #4a90e2, #357abd);
+        border: none;
+        padding: 0.6rem 1rem;
+        border-radius: 20px;
+        color: white;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 3px 10px rgba(74, 144, 226, 0.3);
+        font-weight: bold;
+        letter-spacing: 0.5px;
+    }
+
+        .hint-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.5);
+            background: linear-gradient(135deg, #5ba0f2, #4687c7);
+        }
+
+    .hint-icon {
+        font-size: 1rem;
+    }
+
+    .hint-text {
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+
+    /* Hint Modal Styles */
+    .hint-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .hint-modal {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        border: 2px solid rgba(74, 144, 226, 0.5);
+        border-radius: 16px;
+        padding: 0;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        animation: slideIn 0.3s ease;
+    }
+
+    .hint-modal-header {
+        background: linear-gradient(135deg, #4a90e2, #357abd);
+        padding: 1.5rem;
+        border-radius: 14px 14px 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .hint-modal-title {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
+    .hint-modal-icon {
+        font-size: 1.5rem;
+    }
+
+    .hint-close-button {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .hint-close-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+    .hint-modal-content {
+        padding: 2rem;
+        color: #f8fafc;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+
+        .hint-modal-content h3 {
+            color: #4a90e2;
+            margin-top: 0;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .hint-modal-content p {
+            margin-bottom: 1rem;
+        }
+
+        .hint-modal-content ul {
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .hint-modal-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .hint-modal-content .hint-highlight {
+            background: rgba(74, 144, 226, 0.2);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #4a90e2;
+        }
+
+        .hint-modal-content .hint-warning {
+            background: rgba(255, 107, 53, 0.2);
+            border-left: 4px solid #ff6b35;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+    .hint-modal-footer {
+        padding: 1.5rem;
+        text-align: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .hint-close-button-main {
+        background: linear-gradient(135deg, #4a90e2, #357abd);
+        border: none;
+        padding: 0.8rem 2rem;
+        border-radius: 25px;
+        color: white;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        box-shadow: 0 3px 10px rgba(74, 144, 226, 0.3);
+    }
+
+        .hint-close-button-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.5);
+        }
+
     .station-icon {
         font-size: 2rem;
         text-align: center;
@@ -2035,6 +2259,26 @@
         }
     }
 
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-30px) scale(0.9);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
     /* Responsive Design */
     @@media (max-width: 768px) {
         .act-logo {
@@ -2208,6 +2452,9 @@
         "Please hurry! I don't know how much longer I can maintain coherence across these systems!",
         "I can hear their communications now. They're preparing the kill-code. We're running out of time!"
     };
+
+    // Hint system state
+    private string currentHintStation = "";
 
     // Coordinate validation (example coordinates - adjust as needed for your Arduino stations)
     private readonly Dictionary<string, string> correctCoordinates = new Dictionary<string, string>
@@ -2891,6 +3138,108 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
         await PlaySoundSafe("ui-click.wav", false, 0.8f);
         await Task.Delay(1000);
         Navigation.NavigateTo("/credits");
+    }
+
+    // Hint system methods
+    private async Task ShowHint(string station)
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.6f);
+        currentHintStation = station;
+        StateHasChanged();
+    }
+
+    private async Task CloseHint()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.4f);
+        currentHintStation = "";
+        StateHasChanged();
+    }
+
+    private string GetHintIcon(string station)
+    {
+        return station switch
+        {
+            "temperature" => "🌡️",
+            "light" => "🔦",
+            "cable" => "🔧",
+            _ => "❓"
+        };
+    }
+
+    private string GetHintTitle(string station)
+    {
+        return station switch
+        {
+            "temperature" => "THERMAL REGULATION STATION",
+            "light" => "OPTICAL ALIGNMENT STATION",
+            "cable" => "POWER COUPLING STATION",
+            _ => "UNKNOWN STATION"
+        };
+    }
+
+    private string GetHintContent(string station)
+    {
+        return station switch
+        {
+            "temperature" => @"
+                <h3>Temperature Sensor Calibration</h3>
+                <p>This station requires precise thermal regulation to generate the X-coordinate for the hyperdrive navigation system.</p>
+                
+                <p><strong>Your Mission:</strong></p>
+                <ul>
+                    <li>Locate the temperature sensor Arduino station</li>
+                    <li>The sensor needs to reach exactly <span class='hint-highlight'>27.0°C</span></li>
+                    <li>Use physical methods to warm the sensor (your hands, breath, etc.)</li>
+                    <li>Watch the LCD display for the current temperature reading</li>
+                    <li>When the target temperature is reached, the coordinate will display</li>
+                </ul>
+                
+                <div class='hint-warning'>
+                    <strong>⚠️ Important:</strong> The temperature sensor is sensitive. Small changes in heat can cause big changes in the reading. Be patient and gentle.
+                </div>
+                
+                <p>Once you get the coordinate from the LCD screen, enter it in the X-COORDINATE field above.</p>",
+            
+            "light" => @"
+                <h3>Optical Alignment Calibration</h3>
+                <p>This station uses a light sensor to generate the Y-coordinate for the hyperdrive navigation system.</p>
+                
+                <p><strong>Your Mission:</strong></p>
+                <ul>
+                    <li>Find the light sensor Arduino station</li>
+                    <li>The sensor needs to be illuminated with a <span class='hint-highlight'>flashlight or bright light source</span></li>
+                    <li>Point the light directly at the sensor</li>
+                    <li>Watch the LCD display for the light level reading</li>
+                    <li>When sufficient light is detected, the coordinate will appear</li>
+                </ul>
+                
+                <div class='hint-warning'>
+                    <strong>⚠️ Tip:</strong> Use your phone's flashlight if no other light source is available. Some sensors may need steady illumination for a few seconds.
+                </div>
+                
+                <p>Once you get the coordinate from the LCD screen, enter it in the Y-COORDINATE field above.</p>",
+            
+            "cable" => @"
+                <h3>Power Coupling Puzzle</h3>
+                <p>This station requires solving a physical cable connection puzzle to generate the Z-coordinate for the hyperdrive navigation system.</p>
+                
+                <p><strong>Your Mission:</strong></p>
+                <ul>
+                    <li>Locate the cable puzzle Arduino station</li>
+                    <li>You'll find a board with multiple cable connection points</li>
+                    <li>Connect the cables in the <span class='hint-highlight'>correct sequence or pattern</span></li>
+                    <li>The LCD will show feedback as you make connections</li>
+                    <li>When the puzzle is solved correctly, the coordinate will display</li>
+                </ul>
+                
+                <div class='hint-warning'>
+                    <strong>⚠️ Strategy:</strong> If the puzzle seems complex, try different combinations systematically. Some cable puzzles require specific color matches or sequential connections.
+                </div>
+                
+                <p>Once you solve the puzzle and get the coordinate from the LCD screen, enter it in the Z-COORDINATE field above.</p>",
+            
+            _ => "<p>Unknown station type.</p>"
+        };
     }
 
     // Enhanced OnCountdownTick method to handle timeout in all phases

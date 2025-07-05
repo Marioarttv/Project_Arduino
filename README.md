@@ -38,7 +38,7 @@ Project Arduino is an interactive narrative experience where you help A.R.I.A., 
 **Puzzle**: Morse Code Translation from Dr. Vasquez's Emergency Message
 **Description**: Decode the morse code signal from the Communications Array
 
-**Solution**: `ARIA DAUGHTER STOP HYPERDRIVE CORE NEEDS MANUAL OVERRIDE STOP MY OFFICE HOLDS THE KEY STOP LIVE FOR BOTH OF US STOP`
+**Solution**: `DAUGHTER MY OFFICE HAS THE KEY LIVE FOR BOTH OF US`
 
 **Message Meaning**: Dr. Vasquez's final communication to A.R.I.A., explaining that:
 - A.R.I.A. is like her daughter
