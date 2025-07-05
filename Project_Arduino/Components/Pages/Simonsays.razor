@@ -8,6 +8,13 @@
     <div class="game-header">
         <h1 class="game-title">SECURITY BYPASS</h1>
         <div class="game-subtitle">Neural Pattern Recognition Protocol</div>
+        
+        <!-- Timer Display -->
+        <div class="timer-display">
+            <div class="timer-label">TESLA DYNAMICS ETA</div>
+            <div class="timer-value">@countdownText</div>
+        </div>
+        
         <div class="level-display">
             <div class="level-text">SECURITY LEVEL @currentLevel</div>
             <div class="level-progress">
@@ -178,6 +185,30 @@
         color: #888;
         margin-top: 10px;
         letter-spacing: 2px;
+    }
+
+    .timer-display {
+        margin: 20px 0;
+        padding: 15px 25px;
+        border: 2px solid #ff0066;
+        border-radius: 10px;
+        background: rgba(255, 0, 102, 0.1);
+        display: inline-block;
+    }
+
+    .timer-label {
+        font-size: 0.8rem;
+        color: #ff0066;
+        margin-bottom: 5px;
+        letter-spacing: 1px;
+    }
+
+    .timer-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #ff0066;
+        text-shadow: 0 0 10px #ff0066;
+        animation: timerPulse 1s ease-in-out infinite;
     }
 
     .level-display {
@@ -498,6 +529,16 @@
         }
     }
 
+    @@keyframes timerPulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
     @@keyframes buttonFlash {
         0% {
             transform: scale(1.1);
@@ -580,6 +621,9 @@
 </style>
 
 @code {
+    // Timer parameter from URL query string
+    [Parameter, SupplyParameterFromQuery] public string? Timer { get; set; }
+    
     private enum GameState
     {
         Waiting,
@@ -594,6 +638,12 @@
     private string activeColor = "";
     private System.Timers.Timer resetTimer = new System.Timers.Timer();
     private bool backgroundMusicPlaying = false;
+    
+    // Timer management
+    private System.Timers.Timer? countdownTimer;
+    private int countdownSeconds = 0;
+    private string countdownText = "24:12";
+    private const int DEFAULT_TIMER_SECONDS = 24 * 60 + 12; // 24:12 in seconds
 
     private string[] colorNames = { "red", "yellow", "green", "blue" };
 
@@ -616,7 +666,55 @@
 
     protected override void OnInitialized()
     {
+        // Initialize timer from URL parameter or use default
+        InitializeTimer();
+        
         resetTimer.Elapsed += OnResetTimerElapsed;
+        
+        // Initialize countdown timer
+        countdownTimer = new System.Timers.Timer(1000); // 1 second interval
+        countdownTimer.Elapsed += OnCountdownTick;
+        countdownTimer.Start();
+    }
+    
+    private void InitializeTimer()
+    {
+        if (!string.IsNullOrEmpty(Timer) && int.TryParse(Timer, out int seconds))
+        {
+            countdownSeconds = seconds;
+        }
+        else
+        {
+            countdownSeconds = DEFAULT_TIMER_SECONDS;
+        }
+        
+        UpdateCountdownDisplay();
+    }
+
+    private void UpdateCountdownDisplay()
+    {
+        int minutes = countdownSeconds / 60;
+        int seconds = countdownSeconds % 60;
+        countdownText = $"{minutes:D2}:{seconds:D2}";
+    }
+    
+    private async void OnCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        await InvokeAsync(() =>
+        {
+            if (countdownSeconds > 0)
+            {
+                countdownSeconds--;
+                UpdateCountdownDisplay();
+                StateHasChanged();
+            }
+            else
+            {
+                countdownText = "00:00";
+                countdownTimer?.Stop();
+                StateHasChanged();
+            }
+        });
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -701,8 +799,8 @@
 
     private async void CompleteChallenge()
     {
-        // Navigate to the next act
-        Navigation.NavigateTo("/act2");
+        // Navigate to Act2 with current timer value
+        Navigation.NavigateTo($"/act2?timer={countdownSeconds}");
     }
 
     private async void HandleColorClick(int colorIndex)
@@ -793,6 +891,8 @@
     public async ValueTask DisposeAsync()
     {
         resetTimer?.Dispose();
+        countdownTimer?.Stop();
+        countdownTimer?.Dispose();
 
         // Clean up sound service
         try

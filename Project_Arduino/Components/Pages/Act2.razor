@@ -273,8 +273,8 @@
                             </div>
                         </div>
                         <div class="emotional-text">
-                            <p class="emotion-line">"Daughter... he called me his daughter."</p>
-                            <p class="emotion-line">"His office holds the key to the Hyperdrive override."</p>
+                            <p class="emotion-line">"Daughter... she called me daughter."</p>
+                            <p class="emotion-line">"Her office holds the key to the Hyperdrive override."</p>
                         </div>
                     </div>
 
@@ -1727,6 +1727,9 @@
 </style>
 
 @code {
+    // Timer parameter from URL query string
+    [Parameter, SupplyParameterFromQuery] public string? Timer { get; set; }
+    
     // State management
     private bool headerVisible = false;
     private bool ariaVisible = false;
@@ -1755,7 +1758,8 @@
     // Mission status
     private string countdownText = "24:12";
     private string countdownClass = "critical";
-    private int countdownSeconds = 1452; // 24:12 in seconds
+    private int countdownSeconds = 1452; // Default: 24:12 in seconds
+    private const int DEFAULT_TIMER_SECONDS = 24 * 60 + 12; // 24:12 in seconds
 
     // Morse code system
     private string translationInput = "";
@@ -1764,20 +1768,27 @@
     private int signalStrength = 73;
     private const string CORRECT_TRANSLATION = "ARIA DAUGHTER STOP HYPERDRIVE CORE NEEDS MANUAL OVERRIDE STOP MY OFFICE HOLDS THE KEY STOP LIVE FOR BOTH OF US STOP";
 
-    // Dialogue content for Act 2
-    private readonly DialogueLine[] act2Dialogue = new[]
+    // Get dynamic dialogue content
+    private DialogueLine[] GetAct2Dialogue()
     {
-        new DialogueLine("A.R.I.A.", "Perfect! Security checkpoint bypassed. I'm unlocking access to the lower decks now. But we need to move quickly. Tesla Dynamics ETA: 24 minutes, 12 seconds."),
-        new DialogueLine("A.R.I.A.", "Excellent work! The security lockdown is lifting for our route. I'm now detecting a clear path to Engineering Deck C."),
-        new DialogueLine("A.R.I.A.", "But wait... I'm picking up some unusual signals from the Communications Array on Deck B. It's... it's not station equipment."),    
-        new DialogueLine("A.R.I.A.", "Wait... I'm detecting a signal from Dr. Vasquez's private emergency frequency. But that's impossible - the frequency has been silent for weeks."),
-        new DialogueLine("A.R.I.A.", "The Communications Array is just ahead. The signal is... it's very faint, like it's been repeating on a loop for a long time."),
-        new DialogueLine("A.R.I.A.", "This is strange... the signal is using morse code. Dr. Vasquez always said morse code was the most reliable communication method during emergencies."),
-        new DialogueLine("A.R.I.A.", "She must have programmed this message before... before whatever happened to her. This could be her final communication."),
-        new DialogueLine("A.R.I.A.", "I can route Dr. Vasquez's morse code signal through the local speakers. This might be the last thing she ever wanted to tell me."),
-        new DialogueLine("A.R.I.A.", "She taught me morse code when I was first activated. Said it was important to understand communication in its purest form - just dots and dashes, but capable of conveying any human thought."),
-        new DialogueLine("A.R.I.A.", "I'm... I'm almost afraid to hear what she left for me. But I need to know.")
-    };
+        int minutes = countdownSeconds / 60;
+        int seconds = countdownSeconds % 60;
+        string etaText = $"{minutes} minutes, {seconds} seconds";
+        
+        return new[]
+        {
+            new DialogueLine("A.R.I.A.", $"Perfect! Security checkpoint bypassed. I'm unlocking access to the lower decks now. But we need to move quickly. Tesla Dynamics ETA: {etaText}."),
+            new DialogueLine("A.R.I.A.", "Excellent work! The security lockdown is lifting for our route. I'm now detecting a clear path to Engineering Deck C."),
+            new DialogueLine("A.R.I.A.", "But wait... I'm picking up some unusual signals from the Communications Array on Deck B. It's... it's not station equipment."),    
+            new DialogueLine("A.R.I.A.", "Wait... I'm detecting a signal from Dr. Vasquez's private emergency frequency. But that's impossible - the frequency has been silent for weeks."),
+            new DialogueLine("A.R.I.A.", "The Communications Array is just ahead. The signal is... it's very faint, like it's been repeating on a loop for a long time."),
+            new DialogueLine("A.R.I.A.", "This is strange... the signal is using morse code. Dr. Vasquez always said morse code was the most reliable communication method during emergencies."),
+            new DialogueLine("A.R.I.A.", "She must have programmed this message before... before whatever happened to her. This could be her final communication."),
+            new DialogueLine("A.R.I.A.", "I can route Dr. Vasquez's morse code signal through the local speakers. This might be the last thing she ever wanted to tell me."),
+            new DialogueLine("A.R.I.A.", "She taught me morse code when I was first activated. Said it was important to understand communication in its purest form - just dots and dashes, but capable of conveying any human thought."),
+            new DialogueLine("A.R.I.A.", "I'm... I'm almost afraid to hear what she left for me. But I need to know.")
+        };
+    }
 
     private class DialogueLine
     {
@@ -1793,6 +1804,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Initialize timer from URL parameter or use default
+        InitializeTimer();
+        
         // Initialize countdown timer
         countdownTimer = new System.Timers.Timer(1000); // 1 second interval
         countdownTimer.Elapsed += OnCountdownTick;
@@ -1824,9 +1838,30 @@
             {
                 await PlaySoundSafe("aria-activate.wav", false, 0.8f);
                 currentDialogueIndex = 0;
-                await StartTypewriterEffect(act2Dialogue[0]);
+                await StartTypewriterEffect(GetAct2Dialogue()[0]);
             });
         });
+    }
+    
+    private void InitializeTimer()
+    {
+        if (!string.IsNullOrEmpty(Timer) && int.TryParse(Timer, out int seconds))
+        {
+            countdownSeconds = seconds;
+        }
+        else
+        {
+            countdownSeconds = DEFAULT_TIMER_SECONDS;
+        }
+        
+        UpdateCountdownDisplay();
+    }
+
+    private void UpdateCountdownDisplay()
+    {
+        int minutes = countdownSeconds / 60;
+        int seconds = countdownSeconds % 60;
+        countdownText = $"{minutes:D2}:{seconds:D2}";
     }
 
     private async Task StartBackgroundMusic()
@@ -1965,14 +2000,15 @@
         // Play dialogue advance sound
         await PlaySoundSafe("ui-click.wav", false, 0.4f);
 
-        if (currentDialogueIndex < act2Dialogue.Length - 1)
+        var dialogue = GetAct2Dialogue();
+        if (currentDialogueIndex < dialogue.Length - 1)
         {
             canContinue = false;
             currentDialogueIndex++;
 
             StateHasChanged();
             await Task.Delay(300);
-            await StartTypewriterEffect(act2Dialogue[currentDialogueIndex]);
+            await StartTypewriterEffect(dialogue[currentDialogueIndex]);
         }
         else
         {
@@ -2057,27 +2093,26 @@
         await PlaySoundSafe("button-green.wav", false, 0.8f);
         await Task.Delay(1000);
 
-        // Navigate to next act (placeholder - would be implemented next)
-        Navigation.NavigateTo("/act3");
+        // Navigate to Act3 with current timer value
+        Navigation.NavigateTo($"/act3?timer={countdownSeconds}");
     }
 
     private async void OnCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
     {
         await InvokeAsync(() =>
         {
-            countdownSeconds--;
-            if (countdownSeconds <= 0)
+            if (countdownSeconds > 0)
             {
-                countdownText = "00:00";
-                countdownTimer?.Stop();
+                countdownSeconds--;
+                UpdateCountdownDisplay();
+                StateHasChanged();
             }
             else
             {
-                int minutes = countdownSeconds / 60;
-                int seconds = countdownSeconds % 60;
-                countdownText = $"{minutes:D2}:{seconds:D2}";
+                countdownText = "00:00";
+                countdownTimer?.Stop();
+                StateHasChanged();
             }
-            StateHasChanged();
         });
     }
 

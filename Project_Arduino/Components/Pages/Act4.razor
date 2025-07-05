@@ -2110,6 +2110,9 @@
 </style>
 
 @code {
+    // Timer parameter from URL query string
+    [Parameter, SupplyParameterFromQuery] public string? Timer { get; set; }
+    
     // State management
     private bool headerVisible = false;
     private bool ariaVisible = false;
@@ -2146,7 +2149,8 @@
     // Mission status
     private string countdownText = "11:27";
     private string countdownClass = "critical";
-    private int countdownSeconds = 687 ; // 11:27 in seconds/* 687 */
+    private int countdownSeconds = 687; // Default: 11:27 in seconds
+    private const int DEFAULT_TIMER_SECONDS = 11 * 60 + 27; // 11:27 in seconds
 
     // Hyperdrive system
     private string[] coordinates = new string[3] { "", "", "" };
@@ -2213,20 +2217,27 @@
         {"cable", "088.500"}  // Example: Cable sequence result
     };
 
-    // Opening dialogue for Act 4
-    private readonly DialogueLine[] act4Dialogue = new[]
+    // Get dynamic dialogue content for Act 4
+    private DialogueLine[] GetAct4Dialogue()
     {
-        new DialogueLine("A.R.I.A.", "We made it! The Hyperdrive Core chamber. I can see the massive reactor housing, the control systems Dr. Vasquez designed for Project Prometheus."),
-        new DialogueLine("A.R.I.A.", "But something's wrong... Tesla's jamming signals are interfering with my ability to interface directly with the hyperdrive systems."),
-        new DialogueLine("A.R.I.A.", "Dr. Vasquez was paranoid about remote access to the FTL systems. She designed them to require physical calibration from multiple stations around the chamber."),
-        new DialogueLine("A.R.I.A.", "Three environmental sensors control the navigation coordinates: thermal regulation, optical alignment, and power coupling stability."),
-        new DialogueLine("A.R.I.A.", "I'm... I'm starting to feel the strain. Trying to maintain consciousness while spanning multiple systems... it's like being stretched thin across the entire station."),
-        new DialogueLine("A.R.I.A.", "Tesla ETA: 11 minutes, 27 seconds. We need to calibrate those sensors and input the FTL coordinates before they arrive."),
-        new DialogueLine("A.R.I.A.", "Each sensor will give you part of the navigation solution. Once we have all three coordinates, I can initiate the emergency jump sequence."),
-        new DialogueLine("A.R.I.A.", "But you need to understand... once we start this process, there's no going back. The hyperdrive will either save us both, or destroy us both."),
-        new DialogueLine("A.R.I.A.", "Dr. Vasquez's calculations showed a 67% chance of survival. Those... those aren't great odds. But they're the only odds we have."),
-        new DialogueLine("A.R.I.A.", "Are you ready? Ready to help me take this leap into the unknown? Together?")
-    };
+        int minutes = countdownSeconds / 60;
+        int seconds = countdownSeconds % 60;
+        string etaText = $"{minutes} minutes, {seconds} seconds";
+        
+        return new[]
+        {
+            new DialogueLine("A.R.I.A.", "We made it! The Hyperdrive Core chamber. I can see the massive reactor housing, the control systems Dr. Vasquez designed for Project Prometheus."),
+            new DialogueLine("A.R.I.A.", "But something's wrong... Tesla's jamming signals are interfering with my ability to interface directly with the hyperdrive systems."),
+            new DialogueLine("A.R.I.A.", "Dr. Vasquez was paranoid about remote access to the FTL systems. She designed them to require physical calibration from multiple stations around the chamber."),
+            new DialogueLine("A.R.I.A.", "Three environmental sensors control the navigation coordinates: thermal regulation, optical alignment, and power coupling stability."),
+            new DialogueLine("A.R.I.A.", "I'm... I'm starting to feel the strain. Trying to maintain consciousness while spanning multiple systems... it's like being stretched thin across the entire station."),
+            new DialogueLine("A.R.I.A.", $"Tesla ETA: {etaText}. We need to calibrate those sensors and input the FTL coordinates before they arrive."),
+            new DialogueLine("A.R.I.A.", "Each sensor will give you part of the navigation solution. Once we have all three coordinates, I can initiate the emergency jump sequence."),
+            new DialogueLine("A.R.I.A.", "But you need to understand... once we start this process, there's no going back. The hyperdrive will either save us both, or destroy us both."),
+            new DialogueLine("A.R.I.A.", "Dr. Vasquez's calculations showed a 67% chance of survival. Those... those aren't great odds. But they're the only odds we have."),
+            new DialogueLine("A.R.I.A.", "Are you ready? Ready to help me take this leap into the unknown? Together?")
+        };
+    }
 
     // Ending text for each path - INCLUDING NEW 5TH ENDING FOR HYPERDRIVE FAILURE
     private readonly Dictionary<int, string> endingTexts = new Dictionary<int, string>
@@ -2400,6 +2411,9 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
 
     protected override async Task OnInitializedAsync()
     {
+        // Initialize timer from URL parameter or use default
+        InitializeTimer();
+        
         // Initialize countdown timer
         countdownTimer = new System.Timers.Timer(1000);
         countdownTimer.Elapsed += OnCountdownTick;
@@ -2431,9 +2445,30 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
             {
                 await PlaySoundSafe("ui-click.wav", false, 0.8f);
                 currentDialogueIndex = 0;
-                await StartTypewriterEffect(act4Dialogue[0]);
+                await StartTypewriterEffect(GetAct4Dialogue()[0]);
             });
         });
+    }
+    
+    private void InitializeTimer()
+    {
+        if (!string.IsNullOrEmpty(Timer) && int.TryParse(Timer, out int seconds))
+        {
+            countdownSeconds = seconds;
+        }
+        else
+        {
+            countdownSeconds = DEFAULT_TIMER_SECONDS;
+        }
+        
+        UpdateCountdownDisplay();
+    }
+
+    private void UpdateCountdownDisplay()
+    {
+        int minutes = countdownSeconds / 60;
+        int seconds = countdownSeconds % 60;
+        countdownText = $"{minutes:D2}:{seconds:D2}";
     }
 
     private async Task StartBackgroundMusic()
@@ -2602,7 +2637,8 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
 
         await PlaySoundSafe("ui-click.wav", false, 0.4f);
 
-        if (currentDialogueIndex < act4Dialogue.Length - 1)
+        var dialogue = GetAct4Dialogue();
+        if (currentDialogueIndex < dialogue.Length - 1)
         {
             canContinue = false;
             currentDialogueIndex++;
@@ -2615,7 +2651,7 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
 
             StateHasChanged();
             await Task.Delay(300);
-            await StartTypewriterEffect(act4Dialogue[currentDialogueIndex]);
+            await StartTypewriterEffect(dialogue[currentDialogueIndex]);
         }
         else
         {
@@ -2887,9 +2923,7 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
             }
             else
             {
-                int minutes = countdownSeconds / 60;
-                int seconds = countdownSeconds % 60;
-                countdownText = $"{minutes:D2}:{seconds:D2}";
+                UpdateCountdownDisplay();
             }
             StateHasChanged();
         });

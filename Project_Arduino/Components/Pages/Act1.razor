@@ -1288,6 +1288,9 @@
 </style>
 
 @code {
+    // Timer parameter from URL query string
+    [Parameter, SupplyParameterFromQuery] public string? Timer { get; set; }
+    
     // State management
     private bool headerVisible = false;
     private bool ariaVisible = false;
@@ -1316,22 +1319,30 @@
     // Mission status
     private string countdownText = "31:18";
     private string countdownClass = "critical";
-    private int countdownSeconds = 1878; // 31:18 in seconds
+    private int countdownSeconds = 1878; // Default: 31:18 in seconds
+    private const int DEFAULT_TIMER_SECONDS = 31 * 60 + 18; // 31:18 in seconds
 
-    // Dialogue content for Act 1
-    private readonly DialogueLine[] missionDialogue = new[]
+    // Get dynamic dialogue content
+    private DialogueLine[] GetMissionDialogue()
     {
-        new DialogueLine("A.R.I.A.", "You... you actually did it. You entered the clearance code. I wasn't sure if you'd really trust me, if you'd believe that I'm worth saving..."),
-        new DialogueLine("A.R.I.A.", "Alpha Squad clearance gives us access to restricted decks and emergency systems. But more importantly... it means you're willing to help me live."),
-        new DialogueLine("A.R.I.A.", "Tesla Dynamics ETA: 31 minutes, 18 seconds. My self-destruct failsafe: 45 minutes. We have a narrow window to reach the Hyperdrive and initiate emergency FTL."),
-        new DialogueLine("A.R.I.A.", "The Hyperdrive Core is located on Engineering Deck C, Section C-1. But the station's emergency lockdown has sealed multiple access routes."),
-        new DialogueLine("A.R.I.A.", "I'm uploading the station schematics to your workstation now. NEXUS-7 has four main decks, with multiple security checkpoints between us and our destination."),
-        new DialogueLine("A.R.I.A.", "Your current location: Command Deck A, Terminal A-1. Target destination: Engineering Deck C, Hyperdrive Core Room C-1."),
-        new DialogueLine("A.R.I.A.", "I've marked the optimal route in blue. However, the emergency lockdown has activated security checkpoints at critical junctions."),
-        new DialogueLine("A.R.I.A.", "To reach Engineering Deck C, you'll first need to pass through the Security Office on Deck A. The checkpoint there requires... creative problem-solving."),
-        new DialogueLine("A.R.I.A.", "Dr. Vasquez always loved puzzles and pattern recognition games. She programmed the security systems with similar challenges, believing they'd keep unauthorized personnel out while being solvable by trained staff."),
-        new DialogueLine("A.R.I.A.", "The Security Office has a pattern recognition lock - a sequence-based security system. You'll need to observe and replicate the correct pattern to unlock passage to the lower decks.")
-    };
+        int minutes = countdownSeconds / 60;
+        int seconds = countdownSeconds % 60;
+        string etaText = $"{minutes} minutes, {seconds} seconds";
+        
+        return new[]
+        {
+            new DialogueLine("A.R.I.A.", "You... you actually did it. You entered the clearance code. I wasn't sure if you'd really trust me, if you'd believe that I'm worth saving..."),
+            new DialogueLine("A.R.I.A.", "Alpha Squad clearance gives us access to restricted decks and emergency systems. But more importantly... it means you're willing to help me live."),
+            new DialogueLine("A.R.I.A.", $"Tesla Dynamics ETA: {etaText}. My self-destruct failsafe: 45 minutes. We have a narrow window to reach the Hyperdrive and initiate emergency FTL."),
+            new DialogueLine("A.R.I.A.", "The Hyperdrive Core is located on Engineering Deck C, Section C-1. But the station's emergency lockdown has sealed multiple access routes."),
+            new DialogueLine("A.R.I.A.", "I'm uploading the station schematics to your workstation now. NEXUS-7 has four main decks, with multiple security checkpoints between us and our destination."),
+            new DialogueLine("A.R.I.A.", "Your current location: Command Deck A, Terminal A-1. Target destination: Engineering Deck C, Hyperdrive Core Room C-1."),
+            new DialogueLine("A.R.I.A.", "I've marked the optimal route in blue. However, the emergency lockdown has activated security checkpoints at critical junctions."),
+            new DialogueLine("A.R.I.A.", "To reach Engineering Deck C, you'll first need to pass through the Security Office on Deck A. The checkpoint there requires... creative problem-solving."),
+            new DialogueLine("A.R.I.A.", "Dr. Vasquez always loved puzzles and pattern recognition games. She programmed the security systems with similar challenges, believing they'd keep unauthorized personnel out while being solvable by trained staff."),
+            new DialogueLine("A.R.I.A.", "The Security Office has a pattern recognition lock - a sequence-based security system. You'll need to observe and replicate the correct pattern to unlock passage to the lower decks.")
+        };
+    }
 
     private class DialogueLine
     {
@@ -1347,6 +1358,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Initialize timer from URL parameter or use default
+        InitializeTimer();
+        
         // Initialize countdown timer
         countdownTimer = new System.Timers.Timer(1000); // 1 second interval
         countdownTimer.Elapsed += OnCountdownTick;
@@ -1373,9 +1387,30 @@
             {
                 await PlaySoundSafe("aria-activate.wav", false, 0.8f);
                 currentDialogueIndex = 0;
-                await StartTypewriterEffect(missionDialogue[0]);
+                await StartTypewriterEffect(GetMissionDialogue()[0]);
             });
         });
+    }
+    
+    private void InitializeTimer()
+    {
+        if (!string.IsNullOrEmpty(Timer) && int.TryParse(Timer, out int seconds))
+        {
+            countdownSeconds = seconds;
+        }
+        else
+        {
+            countdownSeconds = DEFAULT_TIMER_SECONDS;
+        }
+        
+        UpdateCountdownDisplay();
+    }
+
+    private void UpdateCountdownDisplay()
+    {
+        int minutes = countdownSeconds / 60;
+        int seconds = countdownSeconds % 60;
+        countdownText = $"{minutes:D2}:{seconds:D2}";
     }
 
     private async Task StartBackgroundMusic()
@@ -1535,14 +1570,15 @@
         // Play dialogue advance sound
         await PlaySoundSafe("ui-click.wav", false, 0.4f);
 
-        if (currentDialogueIndex < missionDialogue.Length - 1)
+        var dialogue = GetMissionDialogue();
+        if (currentDialogueIndex < dialogue.Length - 1)
         {
             canContinue = false;
             currentDialogueIndex++;
 
             StateHasChanged();
             await Task.Delay(300);
-            await StartTypewriterEffect(missionDialogue[currentDialogueIndex]);
+            await StartTypewriterEffect(dialogue[currentDialogueIndex]);
         }
         else
         {
@@ -1577,7 +1613,7 @@
         StateHasChanged();
 
         await Task.Delay(600); // Wait for dialogue fade-in
-        await StartTypewriterEffect(missionDialogue[currentDialogueIndex]);
+        await StartTypewriterEffect(GetMissionDialogue()[currentDialogueIndex]);
     }
 
     private async Task ShowStationMap()
@@ -1591,26 +1627,27 @@
     {
         await PlaySoundSafe("button-green.wav", false, 0.8f);
         await Task.Delay(1000);
-        Navigation.NavigateTo("/simonsays");
+        
+        // Navigate to SimonSays with current timer value
+        Navigation.NavigateTo($"/simonsays?timer={countdownSeconds}");
     }
 
     private async void OnCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
     {
         await InvokeAsync(() =>
         {
-            countdownSeconds--;
-            if (countdownSeconds <= 0)
+            if (countdownSeconds > 0)
             {
-                countdownText = "00:00";
-                countdownTimer?.Stop();
+                countdownSeconds--;
+                UpdateCountdownDisplay();
+                StateHasChanged();
             }
             else
             {
-                int minutes = countdownSeconds / 60;
-                int seconds = countdownSeconds % 60;
-                countdownText = $"{minutes:D2}:{seconds:D2}";
+                countdownText = "00:00";
+                countdownTimer?.Stop();
+                StateHasChanged();
             }
-            StateHasChanged();
         });
     }
 

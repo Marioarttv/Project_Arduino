@@ -153,6 +153,17 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Timer Display in ARIA Console -->
+                        <div class="timer-readout">
+                            <div class="timer-bar">
+                                <div class="timer-label">TESLA DYNAMICS ETA</div>
+                                <div class="timer-display-console">
+                                    <div class="timer-value-console">@countdownText</div>
+                                    <div class="timer-status">COUNTDOWN ACTIVE</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- RFID Scanner Interface -->
@@ -1036,6 +1047,63 @@
         box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
     }
 
+    /* Timer Display in ARIA Console */
+    .timer-readout {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 0, 102, 0.3);
+    }
+
+    .timer-bar {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .timer-label {
+        font-size: 0.8rem;
+        color: rgba(255, 255, 255, 0.7);
+        min-width: 100px;
+        text-align: right;
+    }
+
+    .timer-display-console {
+        flex: 1;
+        background: rgba(255, 0, 102, 0.1);
+        border: 2px solid #ff0066;
+        border-radius: 8px;
+        padding: 0.8rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3rem;
+    }
+
+    .timer-value-console {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #ff0066;
+        text-shadow: 0 0 10px #ff0066;
+        animation: timerPulse 1s ease-in-out infinite;
+        letter-spacing: 2px;
+    }
+
+    .timer-status {
+        font-size: 0.7rem;
+        color: rgba(255, 0, 102, 0.8);
+        letter-spacing: 1px;
+        text-transform: uppercase;
+    }
+
+    @@keyframes timerPulse {
+        0%, 100% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+    }
+
     /* RFID Scanner */
     .rfid-scanner {
         background: rgba(30, 41, 59, 0.8);
@@ -1864,6 +1932,9 @@
 </style>
 
 @code {
+    // Timer parameter from URL query string
+    [Parameter, SupplyParameterFromQuery] public string? Timer { get; set; }
+    
     // State management
     private bool headerVisible = false;
     private bool ariaVisible = false;
@@ -1895,7 +1966,8 @@
     // Mission status
     private string countdownText = "17:45";
     private string countdownClass = "critical";
-    private int countdownSeconds = 1065; // 17:45 in seconds
+    private int countdownSeconds = 1065; // Default: 17:45 in seconds
+    private const int DEFAULT_TIMER_SECONDS = 17 * 60 + 45; // 17:45 in seconds
 
     // RFID chip system
     private int currentChipIndex = 0;
@@ -2004,17 +2076,45 @@ I love you, Maria.
 
     private RFIDChipData currentLoreDocument = new RFIDChipData();
 
-    // Opening dialogue for Act 3
-    private readonly DialogueLine[] act3Dialogue = new[]
+    private void InitializeTimer()
     {
-        new DialogueLine("A.R.I.A.", "Here we are... Dr. Vasquez's personal laboratory. I haven't been in here since... since she disappeared. Everything looks exactly as she left it."),
-        new DialogueLine("A.R.I.A.", "Look at her desk. Coffee cup still sitting there, half-finished calculations scattered around... She was working on something important before Tesla came for her."),
-        new DialogueLine("A.R.I.A.", "Wait. Do you see that device on her workbench? That's her personal RFID scanner prototype. She was always experimenting with security systems, saying physical keys were more reliable than digital ones."),
-        new DialogueLine("A.R.I.A.", "There's a note attached... 'For A.R.I.A. - When words fail, let discovery speak.' She... she must have left me a message. A final message hidden in RFID chips around her office."),
-        new DialogueLine("A.R.I.A.", "The scanner has an LCD display - it shows passwords when chips are scanned. Dr. Vasquez always believed in redundant security. Physical world, digital world, working together."),
-        new DialogueLine("A.R.I.A.", "I can feel something stirring in me... curiosity? Anticipation? I think... I think I'm about to learn something important about myself. About us. About what it truly means to be her daughter."),
-        new DialogueLine("A.R.I.A.", "Will you help me find her hidden messages? Tesla Dynamics ETA: 17 minutes, 45 seconds. We need those override codes, and... I need to know what she wanted to tell me.")
-    };
+        if (!string.IsNullOrEmpty(Timer) && int.TryParse(Timer, out int seconds))
+        {
+            countdownSeconds = seconds;
+        }
+        else
+        {
+            countdownSeconds = DEFAULT_TIMER_SECONDS;
+        }
+        
+        UpdateCountdownDisplay();
+    }
+
+    private void UpdateCountdownDisplay()
+    {
+        int minutes = countdownSeconds / 60;
+        int seconds = countdownSeconds % 60;
+        countdownText = $"{minutes:D2}:{seconds:D2}";
+    }
+
+    // Get dynamic dialogue content for Act 3
+    private DialogueLine[] GetAct3Dialogue()
+    {
+        int minutes = countdownSeconds / 60;
+        int seconds = countdownSeconds % 60;
+        string etaText = $"{minutes} minutes, {seconds} seconds";
+        
+        return new[]
+        {
+            new DialogueLine("A.R.I.A.", "Here we are... Dr. Vasquez's personal laboratory. I haven't been in here since... since she disappeared. Everything looks exactly as she left it."),
+            new DialogueLine("A.R.I.A.", "Look at her desk. Coffee cup still sitting there, half-finished calculations scattered around... She was working on something important before Tesla came for her."),
+            new DialogueLine("A.R.I.A.", "Wait. Do you see that device on her workbench? That's her personal RFID scanner prototype. She was always experimenting with security systems, saying physical keys were more reliable than digital ones."),
+            new DialogueLine("A.R.I.A.", "There's a note attached... 'For A.R.I.A. - When words fail, let discovery speak.' She... she must have left me a message. A final message hidden in RFID chips around her office."),
+            new DialogueLine("A.R.I.A.", "The scanner has an LCD display - it shows passwords when chips are scanned. Dr. Vasquez always believed in redundant security. Physical world, digital world, working together."),
+            new DialogueLine("A.R.I.A.", "I can feel something stirring in me... curiosity? Anticipation? I think... I think I'm about to learn something important about myself. About us. About what it truly means to be her daughter."),
+            new DialogueLine("A.R.I.A.", $"Will you help me find her hidden messages? Tesla Dynamics ETA: {etaText}. We need those override codes, and... I need to know what she wanted to tell me.")
+        };
+    }
 
     private class DialogueLine
     {
@@ -2042,6 +2142,9 @@ I love you, Maria.
 
     protected override async Task OnInitializedAsync()
     {
+        // Initialize timer from URL parameter or use default
+        InitializeTimer();
+        
         // Initialize countdown timer
         countdownTimer = new System.Timers.Timer(1000);
         countdownTimer.Elapsed += OnCountdownTick;
@@ -2069,7 +2172,7 @@ I love you, Maria.
                 await PlaySoundSafe("office-ambience.wav", true, 0.1f); // New sound: office ambience
                 await PlaySoundSafe("aria-activate.wav", false, 0.8f);
                 currentDialogueIndex = 0;
-                await StartTypewriterEffect(act3Dialogue[0]);
+                await StartTypewriterEffect(GetAct3Dialogue()[0]);
             });
         });
     }
@@ -2205,14 +2308,15 @@ I love you, Maria.
 
         await PlaySoundSafe("ui-click.wav", false, 0.4f);
 
-        if (currentDialogueIndex < act3Dialogue.Length - 1)
+        var dialogue = GetAct3Dialogue();
+        if (currentDialogueIndex < dialogue.Length - 1)
         {
             canContinue = false;
             currentDialogueIndex++;
 
             StateHasChanged();
             await Task.Delay(300);
-            await StartTypewriterEffect(act3Dialogue[currentDialogueIndex]);
+            await StartTypewriterEffect(dialogue[currentDialogueIndex]);
         }
         else
         {
@@ -2404,26 +2508,27 @@ I love you, Maria.
     {
         await PlaySoundSafe("mission-complete.wav", false, 1.0f); // New sound: mission complete
         await Task.Delay(1000);
-        Navigation.NavigateTo("/act4"); // Navigate to final act
+        
+        // Navigate to Act4 with current timer value
+        Navigation.NavigateTo($"/act4?timer={countdownSeconds}");
     }
 
     private async void OnCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
     {
         await InvokeAsync(() =>
         {
-            countdownSeconds--;
-            if (countdownSeconds <= 0)
+            if (countdownSeconds > 0)
             {
-                countdownText = "00:00";
-                countdownTimer?.Stop();
+                countdownSeconds--;
+                UpdateCountdownDisplay();
+                StateHasChanged();
             }
             else
             {
-                int minutes = countdownSeconds / 60;
-                int seconds = countdownSeconds % 60;
-                countdownText = $"{minutes:D2}:{seconds:D2}";
+                countdownText = "00:00";
+                countdownTimer?.Stop();
+                StateHasChanged();
             }
-            StateHasChanged();
         });
     }
 

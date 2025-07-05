@@ -1577,6 +1577,9 @@
 </style>
 
 @code {
+    // Timer parameter from URL query string
+    [Parameter, SupplyParameterFromQuery] public string? Timer { get; set; }
+    
     // State management
     private bool headerVisible = false;
     private bool showARIA = false;
@@ -1594,11 +1597,15 @@
     private bool pageReady = false;
     private bool postClearanceDialogue = false; 
 
-
     // Sound management
     private bool backgroundMusicPlaying = false;
     private bool sfxEnabled = true;
     private System.Timers.Timer? alarmTimer;
+    
+    // Timer management
+    private System.Timers.Timer? countdownTimer;
+    private int totalSecondsRemaining = 0;
+    private const int DEFAULT_TIMER_SECONDS = 47 * 60 + 32; // 47:32 in seconds
 
     // Dialogue system
     private bool textAnimating = false;
@@ -1664,9 +1671,16 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Initialize timer from URL parameter or use default
+        InitializeTimer();
+        
         // Initialize alarm timer for countdown
         alarmTimer = new System.Timers.Timer(1000); // 1 second interval
         alarmTimer.Elapsed += OnAlarmTick;
+        
+        // Initialize main countdown timer
+        countdownTimer = new System.Timers.Timer(1000); // 1 second interval
+        countdownTimer.Elapsed += OnCountdownTick;
 
         // Load the page and show initial elements
         _ = Task.Run(async () =>
@@ -1688,6 +1702,45 @@
                 pageReady = true;
                 StateHasChanged();
             });
+        });
+    }
+
+    private void InitializeTimer()
+    {
+        if (!string.IsNullOrEmpty(Timer) && int.TryParse(Timer, out int seconds))
+        {
+            totalSecondsRemaining = seconds;
+        }
+        else
+        {
+            totalSecondsRemaining = DEFAULT_TIMER_SECONDS;
+        }
+        
+        UpdateCountdownDisplay();
+    }
+
+    private void UpdateCountdownDisplay()
+    {
+        int minutes = totalSecondsRemaining / 60;
+        int seconds = totalSecondsRemaining % 60;
+        countdownText = $"{minutes:D2}:{seconds:D2}";
+    }
+
+    private async void OnCountdownTick(object? sender, System.Timers.ElapsedEventArgs e)
+    {
+        await InvokeAsync(() =>
+        {
+            if (totalSecondsRemaining > 0)
+            {
+                totalSecondsRemaining--;
+                UpdateCountdownDisplay();
+                StateHasChanged();
+            }
+            else
+            {
+                countdownTimer?.Stop();
+                // Handle timer expiration if needed
+            }
         });
     }
 
@@ -1763,6 +1816,10 @@
         if (gameStarted || !pageReady) return;
 
         gameStarted = true;
+        
+        // Start the main countdown timer
+        countdownTimer?.Start();
+        
         StateHasChanged();
 
         // Play startup sound and begin ambient music
@@ -2027,8 +2084,8 @@
 
         await Task.Delay(1000);
 
-        // Navigate to Act 1
-        Navigation.NavigateTo("/act1");
+        // Navigate to Act 1 with current timer value
+        Navigation.NavigateTo($"/act1?timer={totalSecondsRemaining}");
     }
 
     private async Task DeclineMission()
@@ -2157,6 +2214,8 @@
         typingCts?.Dispose();
         alarmTimer?.Stop();
         alarmTimer?.Dispose();
+        countdownTimer?.Stop();
+        countdownTimer?.Dispose();
 
         // Clean up sound service
         try
