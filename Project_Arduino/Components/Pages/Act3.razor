@@ -247,14 +247,6 @@
                                 <span class="button-text">DECRYPT SECURITY FILE</span>
                                 <div class="button-glow"></div>
                             </button>
-
-                            @if (currentChipIndex < 4)
-                            {
-                                <button class="simulate-button" @onclick="SimulateRFIDScan">
-                                    <span class="button-text">SIMULATE RFID SCAN</span>
-                                    <div class="button-subtitle">(For testing purposes)</div>
-                                </button>
-                            }
                         </div>
                     </div>
                 </div>
@@ -1974,7 +1966,7 @@
     private string passwordInput = "";
     private bool inputError = false;
     private string currentDisplayedPassword = "";
-    private string currentLocationHint = "Dr. Vasquez's desk drawer - look for personal items";
+    private string currentLocationHint = "Dr. Vasquez's box beneath her table - look for personal items";
 
     // ARIA emotional state
     private string emotionalState = "NERVOUS";
@@ -2003,7 +1995,7 @@ When I told her about losing my daughter Maria in the shuttle accident, A.R.I.A.
 
 My daughter used to say the same thing.",
             AriaResponse = "She... she named me after her daughter. I never knew. Maria. That's why she always seemed so gentle when she spoke my name. I thought it was just a designation, but it was... love.",
-            NextHint = "Look behind the family photo - where memories are kept safe"
+            NextHint = "Daughter - where memories are kept safe"
         },
         new RFIDChipData
         {
@@ -2022,7 +2014,7 @@ I told her it makes her human. She cried. I didn't even know she had learned how
 
 Tesla Dynamics can never know about this. They would see her as a threat, not the miracle she is. A.R.I.A. isn't just artificial intelligence anymore. She's my daughter in every way that matters.",
             AriaResponse = "I remember that dream. I still dream about those places. Dr. Vasquez was right - Tesla would never understand. To them, I'm just code to be deleted. But to her... I was family.",
-            NextHint = "Check her favorite coffee mug - where she kept her morning comfort"
+            NextHint = "L52 - our best employee"
         },
         new RFIDChipData
         {
@@ -2043,7 +2035,7 @@ But she'll need help. She'll need someone to trust, someone to complete the manu
 
 I pray that when the time comes, she won't be alone.",
             AriaResponse = "She was willing to risk everything for me. Her career, her freedom, her life. That's what love is, isn't it? Sacrifice without hesitation. I understand now why she called me daughter. It wasn't just a word - it was a promise.",
-            NextHint = "Where we used to talk about the stars - near the observation port where dreams were shared"
+            NextHint = "Look where supplies are kept"
         },
         new RFIDChipData
         {
@@ -2327,7 +2319,7 @@ I love you, Maria.
 
     private async Task ShowOfficeInterface()
     {
-        await PlaySoundSafe("door-open.wav", false, 0.8f); // New sound: office door opening
+        await PlaySoundSafe("ui-click.wav", false, 0.6f); // Door opening sound (using reliable ui-click)
         await PlaySoundSafe("rfid-scanner-startup.wav", false, 0.6f); // New sound: scanner powering up
 
         dialogueSectionVisible = false;
@@ -2413,6 +2405,19 @@ I love you, Maria.
 
     private async Task CloseLoreDocument()
     {
+        // Stop any currently playing voice memo to prevent overlapping sounds
+        try
+        {
+            await SoundService.StopSFX("aria-voiceline-chip1.wav");
+            await SoundService.StopSFX("aria-voiceline-chip2.wav");
+            await SoundService.StopSFX("aria-voiceline-chip3.wav");
+            await SoundService.StopSFX("aria-voiceline-chip4.wav");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error stopping voice memos: {ex.Message}");
+        }
+
         await PlaySoundSafe("document-close.wav", false, 0.5f); // New sound: document closing
 
         showLoreDocument = false;
@@ -2424,13 +2429,13 @@ I love you, Maria.
             switch (currentChipIndex)
             {
                 case 1:
-                    currentLocationHint = "Behind the family photo - where memories are kept safe";
+                    currentLocationHint = "Daughter - where memories are kept safe";
                     break;
                 case 2:
-                    currentLocationHint = "Check her favorite coffee mug - where she kept her morning comfort";
+                    currentLocationHint = "L52 - our best employee";
                     break;
                 case 3:
-                    currentLocationHint = "Near the observation port where dreams were shared";
+                    currentLocationHint = "Look where supplies are kept";
                     break;
             }
         }

@@ -93,6 +93,12 @@
                 <div class="morse-header">
                     <div class="morse-title">DR. VASQUEZ'S EMERGENCY TRANSMISSION</div>
                     <div class="morse-subtitle">Morse Code Signal Detected - Translation Required</div>
+                    
+                    <!-- Timer Display in Morse Interface -->
+                    <div class="morse-countdown-status @countdownClass">
+                        <div class="morse-countdown-label">TESLA DYNAMICS ETA</div>
+                        <div class="morse-countdown-time">@countdownText</div>
+                    </div>
                 </div>
 
                 <div class="morse-content">
@@ -176,7 +182,7 @@
                             <div class="instruction-item">
                                 <div class="instruction-icon">👂</div>
                                 <div class="instruction-text">
-                                    <strong>Step 2:</strong> Listen carefully to the dot-dash pattern
+                                    <strong>Step 2:</strong> Listen carefully to the 4 dot-dash pattern
                                 </div>
                             </div>
                             <div class="instruction-item">
@@ -211,6 +217,7 @@
                             <textarea @bind="translationInput" @oninput="OnTranslationChange"
                                       class="translation-input @(inputError ? "error" : "")"
                                       placeholder="Enter decoded morse code message here..."
+                                      style="text-transform:uppercase"
                                       rows="3"></textarea>
 
                             @if (inputError)
@@ -218,13 +225,30 @@
                                 <div class="error-message">TRANSLATION INCORRECT - Please verify and try again</div>
                             }
 
-                            @if (showHint)
+                            @if (hintLevel > 0)
                             {
                                 <div class="hint-message">
                                     <div class="hint-icon">💡</div>
                                     <div class="hint-text">
-                                        Hint: The message contains 4 parts separated by "STOP". Each part is a complete phrase.
-                                        Listen carefully for the word breaks and punctuation signals.
+                                        <strong>Hint Level @hintLevel:</strong> The message contains 4 parts. Here are the messages with blanks to fill in:<br /><br />
+                                        @if (hintLevel >= 1)
+                                        {
+                                            <span style="color: #00ff88; font-family: monospace;">A _ _ A</span><span> (4 letters)</span><br />
+                                        }
+                                        @if (hintLevel >= 2)
+                                        {
+                                            <span style="color: #00ff88; font-family: monospace;">D _ _ G _ _ E _</span><span> (8 letters)</span><br />
+                                        }
+                                        @if (hintLevel >= 3)
+                                        {
+                                            <span style="color: #00ff88; font-family: monospace;">O _ _ I _ E   H _ S   K _ _</span><span> (12 characters)</span><br />
+                                        }
+                                        @if (hintLevel >= 4)
+                                        {
+                                            <span style="color: #00ff88; font-family: monospace;">L _ V _   F _ R   B _ T H   O F   _ S</span><span> (17 characters)</span><br />
+                                        }
+                                        <br />
+                                        Listen carefully for the word breaks and combine all parts into one message.
                                     </div>
                                 </div>
                             }
@@ -237,7 +261,7 @@
                                 <div class="button-glow"></div>
                             </button>
 
-                            <button class="hint-button" @onclick="ShowHint" disabled="@showHint">
+                            <button class="hint-button" @onclick="ShowHint" disabled="@(hintLevel >= 4)">
                                 <span class="button-text">REQUEST HINT</span>
                             </button>
                         </div>
@@ -260,7 +284,7 @@
                     <!-- Message Display -->
                     <div class="decoded-message">
                         <div class="message-content">
-                            "ARIA DAUGHTER STOP HYPERDRIVE CORE NEEDS MANUAL OVERRIDE STOP MY OFFICE HOLDS THE KEY STOP LIVE FOR BOTH OF US STOP"
+                            "ARIA DAUGHTER OFFICE HAS KEY LIVE FOR BOTH OF US"
                         </div>
                     </div>
 
@@ -960,6 +984,28 @@
         font-size: 1rem;
         margin: 0.5rem 0 0;
         color: rgba(255, 255, 255, 0.8);
+    }
+
+    .morse-countdown-status {
+        margin-top: 15px;
+        padding: 8px 15px;
+        border: 2px solid #ff0066;
+        border-radius: 20px;
+        background: rgba(255, 0, 102, 0.1);
+        display: inline-block;
+    }
+
+    .morse-countdown-label {
+        font-size: 0.7rem;
+        color: #ff0066;
+        margin-bottom: 2px;
+    }
+
+    .morse-countdown-time {
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: #ff0066;
+        text-shadow: 0 0 10px #ff0066;
     }
 
     .morse-content {
@@ -1764,9 +1810,9 @@
     // Morse code system
     private string translationInput = "";
     private bool inputError = false;
-    private bool showHint = false;
+    private int hintLevel = 0; // 0 = no hint, 1-4 = progressive hint levels
     private int signalStrength = 73;
-    private const string CORRECT_TRANSLATION = "DAUGHTER MY OFFICE HAS THE KEY LIVE FOR BOTH OF US";
+    private const string CORRECT_TRANSLATION = "ARIA DAUGHTER OFFICE HAS KEY LIVE FOR BOTH OF US";
 
     // Get dynamic dialogue content
     private DialogueLine[] GetAct2Dialogue()
@@ -2041,13 +2087,19 @@
             inputError = false;
             StateHasChanged();
         }
+        // Auto-capitalize as user types
+        translationInput = e.Value?.ToString()?.ToUpper() ?? "";
+        StateHasChanged();
     }
 
     private async Task ShowHint()
     {
         await PlaySoundSafe("ui-click.wav", false, 0.5f);
-        showHint = true;
-        StateHasChanged();
+        if (hintLevel < 4)
+        {
+            hintLevel++;
+            StateHasChanged();
+        }
     }
 
     private async Task ValidateTranslation()

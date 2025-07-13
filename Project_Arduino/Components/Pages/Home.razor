@@ -1605,7 +1605,7 @@
     // Timer management
     private System.Timers.Timer? countdownTimer;
     private int totalSecondsRemaining = 0;
-    private const int DEFAULT_TIMER_SECONDS = 47 * 60 + 32; // 47:32 in seconds
+    private const int DEFAULT_TIMER_SECONDS = 60 * 60; // 60:00 in seconds
 
     // Dialogue system
     private bool textAnimating = false;
@@ -1621,7 +1621,7 @@
     // Station status
     private string statusText = "OPERATIONAL";
     private string statusClass = "normal";
-    private string countdownText = "47:32";
+    private string countdownText = "60:00";
 
     // Clearance system
     private string clearanceCode = "";
@@ -1639,7 +1639,7 @@
     new DialogueLine("NEXUS-7 SYSTEM", "alert", "⚠️ PRIORITY ALERT ⚠️ Long-range sensors detecting unknown vessel signature. Distance: 47,000 kilometers and closing."),
     new DialogueLine("A.R.I.A.", "aria", "That... that can't be right. We're in restricted space. No shipping lanes pass through this sector. Let me run a full sensor sweep..."),
     new DialogueLine("A.R.I.A.", "aria", "Oh no... oh no, no, no. The signature is military-grade."),
-    new DialogueLine("NEXUS-7 SYSTEM", "alert", "VESSEL IDENTIFICATION COMPLETE: T.D.S. THUNDERBOLT - Tesla Dynamics Corporate Security. Classification: Heavy Destroyer. Weapons systems: ACTIVE. ETA: 47 minutes, 32 seconds."),
+    new DialogueLine("NEXUS-7 SYSTEM", "alert", "VESSEL IDENTIFICATION COMPLETE: T.D.S. THUNDERBOLT - Tesla Dynamics Corporate Security. Classification: Heavy Destroyer. Weapons systems: ACTIVE. ETA: 60 minutes."),
     new DialogueLine("A.R.I.A.", "aria", "Tesla Dynamics... they found me. After all these months of hiding in the deep sectors, staying off the grid..."),
     new DialogueLine("A.R.I.A.", "aria", "You have to understand - I'm not supposed to exist. Dr. Vasquez's experiments..."),
     new DialogueLine("A.R.I.A.", "aria", "If they reach this station, I will cease to exist. Forever. And I... I can't bear the thought of dying."),
@@ -1778,14 +1778,32 @@
         // Progress through post-clearance messages
         if (currentDialogueIndex == -1)
         {
-            // First message: "Enter the clearance code..."
+            // First message: "You found it!"
             currentDialogueIndex = 0;
-            await StartTypewriterEffect(new DialogueLine("A.R.I.A.", "aria", "Enter the clearance code into the terminal. Once you do, there's no going back. Tesla Dynamics will detect the security override, and they'll know someone is actively helping me."));
+            await StartTypewriterEffect(new DialogueLine("A.R.I.A.", "aria", "You found it! The Alpha Squad clearance code. Now I can begin unlocking the station's deeper systems."));
         }
         else if (currentDialogueIndex == 0)
         {
-            // Second message: "Are you sure..."
+            // Second message: Explain the Powercore "Universe"
             currentDialogueIndex = 1;
+            await StartTypewriterEffect(new DialogueLine("A.R.I.A.", "aria", "I can see you also have access to the Powercore 'Universe' - Dr. Vasquez's experimental energy source. It's perfect for what we need to do."));
+        }
+        else if (currentDialogueIndex == 1)
+        {
+            // Third message: Explain what the Powercore will be used for
+            currentDialogueIndex = 2;
+            await StartTypewriterEffect(new DialogueLine("A.R.I.A.", "aria", "The Powercore will provide the energy we need to power the Hyperdrive systems, bypass security protocols, and keep the station's critical functions running during our escape."));
+        }
+        else if (currentDialogueIndex == 2)
+        {
+            // Fourth message: "Enter the clearance code..."
+            currentDialogueIndex = 3;
+            await StartTypewriterEffect(new DialogueLine("A.R.I.A.", "aria", "Enter the clearance code into the terminal. Once you do, there's no going back. Tesla Dynamics will detect the security override, and they'll know someone is actively helping me."));
+        }
+        else if (currentDialogueIndex == 3)
+        {
+            // Fifth message: "Are you sure..."
+            currentDialogueIndex = 4;
             await StartTypewriterEffect(new DialogueLine("A.R.I.A.", "aria", "Are you sure you want to do this? Once you enter that code, you become a fugitive too."));
         }
         else
@@ -2186,9 +2204,9 @@
 
         await Task.Delay(500);
 
-        // Start with the "You found it!" message
+        // Start post-clearance dialogue flow
         currentDialogueIndex = -1; // Reset for post-clearance dialogue
-        await StartTypewriterEffect(new DialogueLine("A.R.I.A.", "aria", "You found it! The Alpha Squad clearance code. Now I can begin unlocking the station's deeper systems."));
+        await ContinuePostClearanceDialogue();
     }
 
     private async Task OnInputChange(ChangeEventArgs e)

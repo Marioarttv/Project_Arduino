@@ -2,6 +2,7 @@
 @using System.Timers
 @inject ISoundService SoundService
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 @implements IAsyncDisposable
 
 <div class="nexus-container">
@@ -164,7 +165,7 @@
                                 <div class="station-icon">💡</div>
                                 <div class="station-info">
                                     <div class="station-name">OPTICAL ALIGNMENT</div>
-                                    <div class="station-description">Light sensor calibration</div>
+                                    <div class="station-description">Optical detection calibration</div>
                                     <div class="station-status">@(stationStatus["light"] ? "CALIBRATED" : "AWAITING INPUT")</div>
                                 </div>
                                 <div class="station-actions">
@@ -217,19 +218,6 @@
                                     <div class="help-icon">ℹ️</div>
                                     <div class="help-text">Complete all three station calibrations to proceed</div>
                                 </div>
-                                
-                                <!-- Debug/Testing buttons -->
-                                <div class="debug-section">
-                                    <button class="simulate-coords-button" @onclick="SimulateCoordinates">
-                                        <span class="button-text">SIMULATE COORDINATES</span>
-                                        <div class="button-subtitle">(For testing)</div>
-                                    </button>
-                                    <div class="coord-hints">
-                                        <div class="hint-item">Temperature: @correctCoordinates["temperature"]</div>
-                                        <div class="hint-item">Light: @correctCoordinates["light"]</div>
-                                        <div class="hint-item">Cable: @correctCoordinates["cable"]</div>
-                                    </div>
-                                </div>
                             }
                         </div>
 
@@ -247,10 +235,59 @@
                                     </div>
                                     <div class="hint-modal-content">
                                         @((MarkupString)GetHintContent(currentHintStation))
+                                        @if (currentHintStation == "light" && biblicalClueRevealed)
+                                        {
+                                            <div class='hint-warning'>
+                                                <strong>🔍 Biblical Reference:</strong> "And God said, Let there be light: and there was light." - Genesis 1:3
+                                            </div>
+                                        }
                                     </div>
                                     <div class="hint-modal-footer">
                                         <button class="hint-close-button-main" @onclick="CloseHint">
                                             <span class="button-text">UNDERSTOOD</span>
+                                        </button>
+                                        @if (currentHintStation == "cable")
+                                        {
+                                            <button class="blueprint-button" @onclick="OpenBlueprintModal" style="margin-left: 1rem;">
+                                                <span class="button-text">🔍 VIEW BLUEPRINT</span>
+                                            </button>
+                                        }
+                                        @if (currentHintStation == "light")
+                                        {
+                                            <button class="biblical-clue-button" @onclick="RevealBiblicalClue" style="margin-left: 1rem;">
+                                                <span class="button-text">📖 REVEAL BIBLICAL CLUE</span>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Blueprint Modal -->
+                        @if (showBlueprintModal)
+                        {
+                            <div class="blueprint-modal-overlay" @onclick="CloseBlueprintModal">
+                                <div class="blueprint-modal" @onclick:stopPropagation="true">
+                                    <div class="blueprint-modal-header">
+                                        <div class="blueprint-modal-title">
+                                            <span class="blueprint-modal-icon">🔧</span>
+                                            POWER COUPLING SYSTEM BLUEPRINT
+                                        </div>
+                                        <button class="blueprint-close-button" @onclick="CloseBlueprintModal">✕</button>
+                                    </div>
+                                    <div class="blueprint-modal-content">
+                                        <img src="/images/blueprint.jpg" alt="Power Coupling Blueprint" class="blueprint-full-image" />
+                                        <div class="blueprint-caption">
+                                            <p><strong>Access Code:</strong> <span class="access-code">8036</span></p>
+                                            <p><em>Use this blueprint to understand the power coupling connections and enter the access code on the keypad.</em></p>
+                                        </div>
+                                    </div>
+                                    <div class="blueprint-modal-footer">
+                                        <button class="blueprint-close-button-main" @onclick="CloseBlueprintModal">
+                                            <span class="button-text">CLOSE BLUEPRINT</span>
+                                        </button>
+                                        <button class="blueprint-open-tab-button" @onclick="OpenBlueprintInNewTab" style="margin-left: 1rem;">
+                                            <span class="button-text">🖥️ OPEN IN NEW TAB</span>
                                         </button>
                                     </div>
                                 </div>
@@ -1391,6 +1428,46 @@
             box-shadow: 0 5px 15px rgba(74, 144, 226, 0.5);
         }
 
+    .blueprint-button {
+        background: linear-gradient(135deg, #ff6b35, #ff0066);
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 25px;
+        color: white;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        box-shadow: 0 3px 10px rgba(255, 107, 53, 0.3);
+    }
+
+            .blueprint-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(255, 107, 53, 0.5);
+    }
+
+    .biblical-clue-button {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 25px;
+        color: white;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        box-shadow: 0 3px 10px rgba(139, 92, 246, 0.3);
+    }
+
+        .biblical-clue-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 92, 246, 0.5);
+        }
+
     .station-icon {
         font-size: 2rem;
         text-align: center;
@@ -2279,6 +2356,167 @@
         }
     }
 
+    /* Blueprint Modal Styles */
+    .blueprint-modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .blueprint-modal {
+        background: linear-gradient(135deg, #1e293b, #334155);
+        border: 3px solid rgba(74, 144, 226, 0.8);
+        border-radius: 20px;
+        padding: 0;
+        max-width: 95vw;
+        max-height: 95vh;
+        width: auto;
+        height: auto;
+        overflow: hidden;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7);
+        animation: slideIn 0.3s ease;
+    }
+
+    .blueprint-modal-header {
+        background: linear-gradient(135deg, #4a90e2, #357abd);
+        padding: 1rem;
+        border-radius: 17px 17px 0 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .blueprint-modal-title {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        color: white;
+        font-size: 1.3rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
+    .blueprint-modal-icon {
+        font-size: 1.8rem;
+    }
+
+    .blueprint-close-button {
+        background: rgba(255, 255, 255, 0.2);
+        border: none;
+        color: white;
+        font-size: 1.2rem;
+        font-weight: bold;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .blueprint-close-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+    .blueprint-modal-content {
+        padding: 1.5rem;
+        text-align: center;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .blueprint-full-image {
+        max-width: 100%;
+        max-height: 75vh;
+        height: auto;
+        border: 2px solid rgba(74, 144, 226, 0.5);
+        border-radius: 12px;
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+        margin-bottom: 1rem;
+    }
+
+    .blueprint-caption {
+        background: rgba(0, 0, 0, 0.2);
+        padding: 1rem;
+        border-radius: 8px;
+        border-left: 4px solid #4a90e2;
+    }
+
+    .blueprint-caption p {
+        margin: 0.5rem 0;
+        color: #f8fafc;
+        font-size: 1rem;
+    }
+
+    .access-code {
+        background: rgba(74, 144, 226, 0.3);
+        padding: 0.3rem 0.6rem;
+        border-radius: 6px;
+        font-weight: bold;
+        color: #4a90e2;
+        font-family: 'Courier New', monospace;
+        font-size: 1.1rem;
+        letter-spacing: 1px;
+    }
+
+    .blueprint-modal-footer {
+        padding: 1rem;
+        text-align: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .blueprint-close-button-main {
+        background: linear-gradient(135deg, #4a90e2, #357abd);
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 25px;
+        color: white;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        box-shadow: 0 3px 10px rgba(74, 144, 226, 0.3);
+    }
+
+        .blueprint-close-button-main:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(74, 144, 226, 0.5);
+        }
+
+    .blueprint-open-tab-button {
+        background: linear-gradient(135deg, #00ff88, #00cc66);
+        border: none;
+        padding: 1rem 2rem;
+        border-radius: 25px;
+        color: #000;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        letter-spacing: 1px;
+        box-shadow: 0 3px 10px rgba(0, 255, 136, 0.3);
+    }
+
+        .blueprint-open-tab-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 255, 136, 0.5);
+        }
+
     /* Responsive Design */
     @@media (max-width: 768px) {
         .act-logo {
@@ -2455,6 +2693,8 @@
 
     // Hint system state
     private string currentHintStation = "";
+    private bool showBlueprintModal = false;
+    private bool biblicalClueRevealed = false;
 
     // Coordinate validation (example coordinates - adjust as needed for your Arduino stations)
     private readonly Dictionary<string, string> correctCoordinates = new Dictionary<string, string>
@@ -2670,6 +2910,8 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
         degradationTimer = new System.Timers.Timer(15000); // Every 15 seconds
         degradationTimer.Elapsed += OnDegradationTick;
         degradationTimer.Start();
+
+
 
         // Show UI immediately
         headerVisible = true;
@@ -3077,7 +3319,7 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
 
         try
         {
-            await SoundService.PlayBackgroundMusic(endingMusic, loop: true, volume: 0.3f);
+            await SoundService.PlayBackgroundMusic(endingMusic, loop: true, volume: 0.5f);
             Console.WriteLine($"Started ending music: {endingMusic}");
         }
         catch (Exception ex)
@@ -3152,6 +3394,34 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
     {
         await PlaySoundSafe("ui-click.wav", false, 0.4f);
         currentHintStation = "";
+        biblicalClueRevealed = false;
+        StateHasChanged();
+    }
+
+    private async Task OpenBlueprintModal()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.6f);
+        showBlueprintModal = true;
+        StateHasChanged();
+    }
+
+    private async Task CloseBlueprintModal()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.4f);
+        showBlueprintModal = false;
+        StateHasChanged();
+    }
+
+    private async Task OpenBlueprintInNewTab()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.6f);
+        await JS.InvokeVoidAsync("open", "/images/blueprint.jpg", "_blank");
+    }
+
+    private async Task RevealBiblicalClue()
+    {
+        await PlaySoundSafe("ui-click.wav", false, 0.6f);
+        biblicalClueRevealed = true;
         StateHasChanged();
     }
 
@@ -3188,11 +3458,15 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
                 <p><strong>Your Mission:</strong></p>
                 <ul>
                     <li>Locate the temperature sensor Arduino station</li>
-                    <li>The sensor needs to reach exactly <span class='hint-highlight'>27.0°C</span></li>
+                    <li>The sensor needs to reach exactly <span class='hint-highlight'>42.0°C</span></li>
                     <li>Use physical methods to warm the sensor (your hands, breath, etc.)</li>
                     <li>Watch the LCD display for the current temperature reading</li>
                     <li>When the target temperature is reached, the coordinate will display</li>
                 </ul>
+                
+                <div class='hint-warning'>
+                    <strong>💡 Tip:</strong> Check the storage unit for a heat-generating device that might help you reach the target temperature more efficiently.
+                </div>
                 
                 <div class='hint-warning'>
                     <strong>⚠️ Important:</strong> The temperature sensor is sensitive. Small changes in heat can cause big changes in the reading. Be patient and gentle.
@@ -3202,40 +3476,41 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
             
             "light" => @"
                 <h3>Optical Alignment Calibration</h3>
-                <p>This station uses a light sensor to generate the Y-coordinate for the hyperdrive navigation system.</p>
+                <p>This station uses optical detection to generate the Y-coordinate for the hyperdrive navigation system.</p>
                 
                 <p><strong>Your Mission:</strong></p>
                 <ul>
-                    <li>Find the light sensor Arduino station</li>
-                    <li>The sensor needs to be illuminated with a <span class='hint-highlight'>flashlight or bright light source</span></li>
-                    <li>Point the light directly at the sensor</li>
-                    <li>Watch the LCD display for the light level reading</li>
-                    <li>When sufficient light is detected, the coordinate will appear</li>
+                    <li>Find the optical alignment Arduino station</li>
+                    <li>Consult the ancient wisdom: <span class='hint-highlight'>1. Moses 1:3</span></li>
+                    <li>When the divine command is fulfilled, the coordinate will manifest</li>
+                    <li>Watch the LCD display for confirmation</li>
+                    <li>Remember, you may use your smart device for this</li>
                 </ul>
                 
-                <div class='hint-warning'>
-                    <strong>⚠️ Tip:</strong> Use your phone's flashlight if no other light source is available. Some sensors may need steady illumination for a few seconds.
-                </div>
-                
-                <p>Once you get the coordinate from the LCD screen, enter it in the Y-COORDINATE field above.</p>",
+                <p>Once you understand the reference and get the coordinate from the LCD screen, enter it in the Y-COORDINATE field above.</p>",
             
             "cable" => @"
                 <h3>Power Coupling Puzzle</h3>
                 <p>This station requires solving a physical cable connection puzzle to generate the Z-coordinate for the hyperdrive navigation system.</p>
+                
+                <div style='text-align: center; margin: 1rem 0;'>
+                    <img src='/images/blueprint.jpg' alt='Power Coupling Blueprint' style='max-width: 100%; height: auto; border: 2px solid #4a90e2; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.3);' />
+                    <p style='font-size: 0.9rem; color: #888; margin-top: 0.5rem;'><em>Power Coupling System Blueprint</em></p>
+                </div>
                 
                 <p><strong>Your Mission:</strong></p>
                 <ul>
                     <li>Locate the cable puzzle Arduino station</li>
                     <li>You'll find a board with multiple cable connection points</li>
                     <li>Connect the cables in the <span class='hint-highlight'>correct sequence or pattern</span></li>
-                    <li>The LCD will show feedback as you make connections</li>
+                    <li>Follow the blueprint image above for guidance</li>
                     <li>When the puzzle is solved correctly, the coordinate will display</li>
                 </ul>
                 
                 <div class='hint-warning'>
-                    <strong>⚠️ Strategy:</strong> If the puzzle seems complex, try different combinations systematically. Some cable puzzles require specific color matches or sequential connections.
+                    <strong>🔑 Access Code:</strong> Use the keypad to enter the access code <span class='hint-highlight'>8036</span> to unlock the power coupling system.
                 </div>
-                
+
                 <p>Once you solve the puzzle and get the coordinate from the LCD screen, enter it in the Z-COORDINATE field above.</p>",
             
             _ => "<p>Unknown station type.</p>"
