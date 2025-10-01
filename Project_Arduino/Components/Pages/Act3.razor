@@ -59,7 +59,7 @@
                 </div>
 
                 <!-- Dialogue Box -->
-                <div class="dialogue-box @(dialogueVisible ? "visible" : "")" @onclick:stopPropagation="true">
+                <div class="dialogue-box @(dialogueVisible ? "visible" : "")" @onclick="HandleDialogueClick" @onclick:stopPropagation="true">
                     <div class="speaker-name aria">@currentSpeaker</div>
                     <div class="dialogue-text">
                         <p class="@(textAnimating ? "animating" : "")">@currentText</p>
@@ -86,7 +86,7 @@
             </div>
         }
 
-        @if (showOfficeInterface && !showLoreDocument)
+        @if (showOfficeInterface && !showLoreDocument && currentChipIndex < 4)
         {
             <!-- Office Interface -->
             <div class="office-interface @(showOfficeInterface ? "visible" : "")">
@@ -250,26 +250,26 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        }
 
-                <!-- Mission Complete -->
-                @if (currentChipIndex >= 4)
-                {
-                    <div class="mission-complete">
-                        <div class="complete-content">
-                            <div class="complete-icon">🔓</div>
-                            <div class="complete-title">HYPERDRIVE OVERRIDE CODES OBTAINED</div>
-                            <div class="override-codes">
-                                <div class="codes-label">MANUAL OVERRIDE SEQUENCE:</div>
-                                <div class="codes-display">PROMETHEUS-7734</div>
-                            </div>
-                            <button class="final-proceed-button" @onclick="CompleteAct3">
-                                <span class="button-text">PROCEED TO HYPERDRIVE CORE</span>
-                                <div class="button-subtitle">Final Phase - Emergency FTL Activation</div>
-                                <div class="button-glow"></div>
-                            </button>
-                        </div>
+        @if (showOfficeInterface && !showLoreDocument && currentChipIndex >= 4)
+        {
+            <!-- Mission Complete -->
+            <div class="mission-complete-fullscreen">
+                <div class="complete-content">
+                    <div class="complete-icon">🔓</div>
+                    <div class="complete-title">HYPERDRIVE OVERRIDE CODES OBTAINED</div>
+                    <div class="override-codes">
+                        <div class="codes-label">MANUAL OVERRIDE SEQUENCE:</div>
+                        <div class="codes-display">PROMETHEUS-7734</div>
                     </div>
-                }
+                    <button class="final-proceed-button" @onclick="CompleteAct3">
+                        <span class="button-text">PROCEED TO HYPERDRIVE CORE</span>
+                        <div class="button-subtitle">Final Phase - Emergency FTL Activation</div>
+                        <div class="button-glow"></div>
+                    </button>
+                </div>
             </div>
         }
 
@@ -1361,6 +1361,33 @@
         border-radius: 20px;
         backdrop-filter: blur(20px);
         margin-top: 2rem;
+    }
+
+    .mission-complete-fullscreen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: linear-gradient(135deg, rgba(0, 255, 136, 0.1), rgba(0, 245, 255, 0.1));
+        z-index: 100;
+        opacity: 1;
+        animation: missionFadeIn 0.8s ease;
+    }
+
+    @@keyframes missionFadeIn {
+        from {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
     }
 
     .complete-content {

@@ -79,7 +79,7 @@
                 </div>
 
                 <!-- Dialogue Box -->
-                <div class="dialogue-box @(dialogueVisible ? "visible" : "")" @onclick:stopPropagation="true">
+                <div class="dialogue-box @(dialogueVisible ? "visible" : "")" @onclick="HandleDialogueClick" @onclick:stopPropagation="true">
                     <div class="speaker-name @speakerClass">@currentSpeaker</div>
                     <div class="dialogue-text">
                         <p class="@(textAnimating ? "animating" : "")">@currentText</p>

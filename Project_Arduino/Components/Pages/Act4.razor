@@ -61,7 +61,7 @@
                 </div>
 
                 <!-- Dialogue Box -->
-                <div class="dialogue-box @(dialogueVisible ? "visible" : "")" @onclick:stopPropagation="true">
+                <div class="dialogue-box @(dialogueVisible ? "visible" : "")" @onclick="HandleDialogueClick" @onclick:stopPropagation="true">
                     <div class="speaker-name aria">@currentSpeaker</div>
                     <div class="dialogue-text">
                         <p class="@(textAnimating ? "animating" : "")">@currentText</p>
@@ -150,7 +150,7 @@
                                 <div class="station-actions">
                                     <button class="hint-button" @onclick="@(() => ShowHint("temperature"))" title="Show Station Instructions">
                                         <span class="hint-icon">💡</span>
-                                        <span class="hint-text">HINT</span>
+                                        <span class="hint-text">INSTRUCTIONS</span>
                                     </button>
                                     <div class="coordinate-input">
                                         <label>X-COORDINATE</label>
@@ -171,7 +171,7 @@
                                 <div class="station-actions">
                                     <button class="hint-button" @onclick="@(() => ShowHint("light"))" title="Show Station Instructions">
                                         <span class="hint-icon">🔦</span>
-                                        <span class="hint-text">HINT</span>
+                                        <span class="hint-text">INSTRUCTIONS</span>
                                     </button>
                                     <div class="coordinate-input">
                                         <label>Y-COORDINATE</label>
@@ -192,7 +192,7 @@
                                 <div class="station-actions">
                                     <button class="hint-button" @onclick="@(() => ShowHint("cable"))" title="Show Station Instructions">
                                         <span class="hint-icon">🔧</span>
-                                        <span class="hint-text">HINT</span>
+                                        <span class="hint-text">INSTRUCTIONS</span>
                                     </button>
                                     <div class="coordinate-input">
                                         <label>Z-COORDINATE</label>
