@@ -193,10 +193,10 @@
                                 </div>
                             </div>
                             <div class="scanner-instructions">
-                                <div class="instruction-item">
+                            <div class="instruction-item location-hint">
                                     <div class="instruction-icon">📍</div>
                                     <div class="instruction-text">
-                                        <strong>Current Location Hint:</strong><br />
+                                    <strong>CURRENT LOCATION</strong><br />
                                         @currentLocationHint
                                     </div>
                                 </div>
@@ -1218,6 +1218,30 @@
         line-height: 1.4;
     }
 
+    /* Current Location emphasis */
+    .instruction-item.location-hint {
+        border-left-color: #ffaa00;
+        background: rgba(255, 170, 0, 0.08);
+        box-shadow: 0 0 12px rgba(255, 170, 0, 0.25);
+        animation: hintPulse 2.5s ease-in-out infinite;
+    }
+
+    .instruction-item.location-hint .instruction-icon {
+        font-size: 1.4rem;
+        filter: drop-shadow(0 0 4px rgba(255, 170, 0, 0.5));
+    }
+
+    .instruction-item.location-hint .instruction-text {
+        font-size: 1rem;
+    }
+
+    .instruction-item.location-hint .instruction-text strong {
+        color: #ffaa00;
+        letter-spacing: 1px;
+        display: inline-block;
+        margin-bottom: 0.25rem;
+    }
+
     /* Password Section */
     .password-section {
         background: rgba(30, 41, 59, 0.8);
@@ -1881,6 +1905,17 @@
 
     }
 
+    @@keyframes hintPulse {
+        0%, 100% {
+            box-shadow: 0 0 8px rgba(255, 170, 0, 0.2);
+            border-left-width: 3px;
+        }
+        50% {
+            box-shadow: 0 0 16px rgba(255, 170, 0, 0.4);
+            border-left-width: 5px;
+        }
+    }
+
     /* Responsive Design */
     @@media (max-width: 768px) {
         .act-logo
@@ -2213,17 +2248,21 @@ I love you, Maria.
     {
         try
         {
-            await PlaySoundSafe("ui-click.wav", false, 0.5f);
+            // Play click sound first (will respect current mute state)
+            await SoundService.PlaySFX("ui-click.wav", false, 0.5f);
 
             if (backgroundMusicPlaying)
             {
-                await SoundService.StopBackgroundMusic();
+                await SoundService.MuteBackgroundMusic();
                 backgroundMusicPlaying = false;
             }
             else
             {
-                await StartBackgroundMusic();
+                await SoundService.UnmuteBackgroundMusic();
+                backgroundMusicPlaying = true;
             }
+
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -2233,14 +2272,33 @@ I love you, Maria.
 
     private async Task ToggleSFX()
     {
-        await PlaySoundSafe("ui-click.wav", false, 0.5f);
-        sfxEnabled = !sfxEnabled;
+        try
+        {
+            // Play click sound first before toggling
+            await SoundService.PlaySFX("ui-click.wav", false, 0.5f);
+
+            sfxEnabled = !sfxEnabled;
+
+            if (sfxEnabled)
+            {
+                await SoundService.UnmuteSFX();
+            }
+            else
+            {
+                await SoundService.MuteSFX();
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to toggle SFX: {ex.Message}");
+        }
     }
 
     private async Task PlaySoundSafe(string soundFile, bool loop = false, float volume = 1.0f)
     {
-        if (!sfxEnabled) return;
-
+        // Sound system now handles muting internally, no need to check here
         try
         {
             await SoundService.PlaySFX(soundFile, loop, volume);
@@ -2283,7 +2341,7 @@ I love you, Maria.
                 currentText = fullText.Substring(0, textIndex);
                 StateHasChanged();
 
-                if (sfxEnabled && soundCounter++ % 3 == 0)
+                if (soundCounter++ % 3 == 0)
                 {
                     _ = PlaySoundSafe("typing-soft.wav", false, 0.1f);
                 }

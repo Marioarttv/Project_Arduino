@@ -1430,17 +1430,21 @@
     {
         try
         {
-            await PlaySoundSafe("ui-click.wav", false, 0.5f);
+            // Play click sound first (will respect current mute state)
+            await SoundService.PlaySFX("ui-click.wav", false, 0.5f);
 
             if (backgroundMusicPlaying)
             {
-                await SoundService.StopBackgroundMusic();
+                await SoundService.MuteBackgroundMusic();
                 backgroundMusicPlaying = false;
             }
             else
             {
-                await StartBackgroundMusic();
+                await SoundService.UnmuteBackgroundMusic();
+                backgroundMusicPlaying = true;
             }
+
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -1450,14 +1454,33 @@
 
     private async Task ToggleSFX()
     {
-        await PlaySoundSafe("ui-click.wav", false, 0.5f);
-        sfxEnabled = !sfxEnabled;
+        try
+        {
+            // Play click sound first before toggling
+            await SoundService.PlaySFX("ui-click.wav", false, 0.5f);
+
+            sfxEnabled = !sfxEnabled;
+
+            if (sfxEnabled)
+            {
+                await SoundService.UnmuteSFX();
+            }
+            else
+            {
+                await SoundService.MuteSFX();
+            }
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to toggle SFX: {ex.Message}");
+        }
     }
 
     private async Task PlaySoundSafe(string soundFile, bool loop = false, float volume = 1.0f)
     {
-        if (!sfxEnabled) return;
-
+        // Sound system now handles muting internally, no need to check here
         try
         {
             await SoundService.PlaySFX(soundFile, loop, volume);
@@ -1502,7 +1525,7 @@
                 StateHasChanged();
 
                 // Play typing sound every few characters
-                if (sfxEnabled && soundCounter++ % 3 == 0)
+                if (soundCounter++ % 3 == 0)
                 {
                     _ = PlaySoundSafe("typing-soft.wav", false, 0.05f);
                 }

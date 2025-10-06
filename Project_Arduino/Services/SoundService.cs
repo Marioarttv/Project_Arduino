@@ -13,6 +13,12 @@ namespace Project_Arduino.Services
         Task SetSFXVolume(float volume);
         Task PauseBackgroundMusic();
         Task ResumeBackgroundMusic();
+        Task MuteBackgroundMusic();
+        Task UnmuteBackgroundMusic();
+        Task MuteSFX();
+        Task UnmuteSFX();
+        Task<bool> IsBackgroundMusicMuted();
+        Task<bool> IsSFXMuted();
     }
 
     public class SoundService : ISoundService, IAsyncDisposable
@@ -220,6 +226,126 @@ namespace Project_Arduino.Services
                     Console.WriteLine($"Error resuming background music: {ex.Message}");
                 }
             }
+        }
+
+        public async Task MuteBackgroundMusic()
+        {
+            if (_soundModule != null)
+            {
+                try
+                {
+                    await _soundModule.InvokeVoidAsync("muteBackgroundMusic");
+                }
+                catch (JSDisconnectedException)
+                {
+                    // Circuit disconnected - can't mute music
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error muting background music: {ex.Message}");
+                }
+            }
+        }
+
+        public async Task UnmuteBackgroundMusic()
+        {
+            if (_soundModule != null)
+            {
+                try
+                {
+                    await _soundModule.InvokeVoidAsync("unmuteBackgroundMusic");
+                }
+                catch (JSDisconnectedException)
+                {
+                    // Circuit disconnected - can't unmute music
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error unmuting background music: {ex.Message}");
+                }
+            }
+        }
+
+        public async Task MuteSFX()
+        {
+            if (_soundModule != null)
+            {
+                try
+                {
+                    await _soundModule.InvokeVoidAsync("muteSFX");
+                }
+                catch (JSDisconnectedException)
+                {
+                    // Circuit disconnected - can't mute SFX
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error muting SFX: {ex.Message}");
+                }
+            }
+        }
+
+        public async Task UnmuteSFX()
+        {
+            if (_soundModule != null)
+            {
+                try
+                {
+                    await _soundModule.InvokeVoidAsync("unmuteSFX");
+                }
+                catch (JSDisconnectedException)
+                {
+                    // Circuit disconnected - can't unmute SFX
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error unmuting SFX: {ex.Message}");
+                }
+            }
+        }
+
+        public async Task<bool> IsBackgroundMusicMuted()
+        {
+            if (_soundModule != null)
+            {
+                try
+                {
+                    return await _soundModule.InvokeAsync<bool>("isBackgroundMusicMuted");
+                }
+                catch (JSDisconnectedException)
+                {
+                    // Circuit disconnected - assume not muted
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error checking background music mute status: {ex.Message}");
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        public async Task<bool> IsSFXMuted()
+        {
+            if (_soundModule != null)
+            {
+                try
+                {
+                    return await _soundModule.InvokeAsync<bool>("isSFXMuted");
+                }
+                catch (JSDisconnectedException)
+                {
+                    // Circuit disconnected - assume not muted
+                    return false;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error checking SFX mute status: {ex.Message}");
+                    return false;
+                }
+            }
+            return false;
         }
 
         public async ValueTask DisposeAsync()

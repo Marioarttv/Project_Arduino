@@ -7,6 +7,10 @@ class SoundSystem {
         this.sfxVolume = 1.0;
         this.audioContext = null;
         this.soundsPath = '/sounds/'; // Default path for sound files
+        this.backgroundMusicMuted = false;
+        this.sfxMuted = false;
+        this.previousBackgroundMusicVolume = 0.5;
+        this.previousSfxVolume = 1.0;
     }
 
     initializeAudioContext() {
@@ -53,13 +57,14 @@ class SoundSystem {
             // Stop current background music if playing
             this.stopBackgroundMusic();
 
-            this.backgroundMusic = this.createAudioElement(fileName, volume * this.backgroundMusicVolume, loop);
+            const actualVolume = this.backgroundMusicMuted ? 0 : (volume * this.backgroundMusicVolume);
+            this.backgroundMusic = this.createAudioElement(fileName, actualVolume, loop);
 
             // Handle play promise for browsers that return one
             const playPromise = this.backgroundMusic.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    console.log(`Background music started: ${fileName}`);
+                    console.log(`Background music started: ${fileName} (muted: ${this.backgroundMusicMuted})`);
                 }).catch(error => {
                     console.error(`Failed to play background music: ${fileName}`, error);
                 });
@@ -76,7 +81,8 @@ class SoundSystem {
             // Create unique key for this SFX instance
             const instanceKey = `${fileName}_${Date.now()}_${Math.random()}`;
 
-            const audio = this.createAudioElement(fileName, volume * this.sfxVolume, loop);
+            const actualVolume = this.sfxMuted ? 0 : (volume * this.sfxVolume);
+            const audio = this.createAudioElement(fileName, actualVolume, loop);
 
             // Store the audio instance
             this.sfxSounds.set(instanceKey, audio);
@@ -92,7 +98,7 @@ class SoundSystem {
             const playPromise = audio.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    console.log(`SFX started: ${fileName}`);
+                    console.log(`SFX started: ${fileName} (muted: ${this.sfxMuted})`);
                 }).catch(error => {
                     console.error(`Failed to play SFX: ${fileName}`, error);
                     this.sfxSounds.delete(instanceKey);
@@ -175,6 +181,48 @@ class SoundSystem {
         }
     }
 
+    muteBackgroundMusic() {
+        this.backgroundMusicMuted = true;
+        if (this.backgroundMusic) {
+            this.backgroundMusic.volume = 0;
+        }
+        console.log('Background music muted');
+    }
+
+    unmuteBackgroundMusic() {
+        this.backgroundMusicMuted = false;
+        if (this.backgroundMusic) {
+            this.backgroundMusic.volume = this.backgroundMusicVolume;
+        }
+        console.log('Background music unmuted');
+    }
+
+    muteSFX() {
+        this.sfxMuted = true;
+        // Mute all currently playing SFX
+        for (const audio of this.sfxSounds.values()) {
+            audio.volume = 0;
+        }
+        console.log('SFX muted');
+    }
+
+    unmuteSFX() {
+        this.sfxMuted = false;
+        // Unmute all currently playing SFX
+        for (const audio of this.sfxSounds.values()) {
+            audio.volume = this.sfxVolume;
+        }
+        console.log('SFX unmuted');
+    }
+
+    isBackgroundMusicMuted() {
+        return this.backgroundMusicMuted;
+    }
+
+    isSFXMuted() {
+        return this.sfxMuted;
+    }
+
     cleanup() {
         this.stopAllSounds();
         if (this.audioContext) {
@@ -243,6 +291,30 @@ export function pauseBackgroundMusic() {
 
 export function resumeBackgroundMusic() {
     soundSystem?.resumeBackgroundMusic();
+}
+
+export function muteBackgroundMusic() {
+    soundSystem?.muteBackgroundMusic();
+}
+
+export function unmuteBackgroundMusic() {
+    soundSystem?.unmuteBackgroundMusic();
+}
+
+export function muteSFX() {
+    soundSystem?.muteSFX();
+}
+
+export function unmuteSFX() {
+    soundSystem?.unmuteSFX();
+}
+
+export function isBackgroundMusicMuted() {
+    return soundSystem?.isBackgroundMusicMuted() ?? false;
+}
+
+export function isSFXMuted() {
+    return soundSystem?.isSFXMuted() ?? false;
 }
 
 export function cleanup() {

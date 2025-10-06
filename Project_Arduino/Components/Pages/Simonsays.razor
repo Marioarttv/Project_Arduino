@@ -744,15 +744,21 @@
     {
         try
         {
+            // Play click sound first (will respect current mute state)
+            await SoundService.PlaySFX("ui-click.wav", false, 0.5f);
+
             if (backgroundMusicPlaying)
             {
-                await SoundService.StopBackgroundMusic();
+                await SoundService.MuteBackgroundMusic();
                 backgroundMusicPlaying = false;
             }
             else
             {
-                await StartBackgroundMusic();
+                await SoundService.UnmuteBackgroundMusic();
+                backgroundMusicPlaying = true;
             }
+
+            StateHasChanged();
         }
         catch (Exception ex)
         {

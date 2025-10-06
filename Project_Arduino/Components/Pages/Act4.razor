@@ -2977,21 +2977,21 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
     {
         try
         {
-            // Stop any overlapping UI sounds
-            await SoundService.StopSFX("ui-click.wav");
-            await Task.Delay(50);
-            
-            await PlaySoundSafe("ui-click.wav", false, 0.5f);
+            // Play click sound first (will respect current mute state)
+            await SoundService.PlaySFX("ui-click.wav", false, 0.5f);
 
             if (backgroundMusicPlaying)
             {
-                await SoundService.StopBackgroundMusic();
+                await SoundService.MuteBackgroundMusic();
                 backgroundMusicPlaying = false;
             }
             else
             {
-                await StartBackgroundMusic();
+                await SoundService.UnmuteBackgroundMusic();
+                backgroundMusicPlaying = true;
             }
+
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -3001,31 +3001,35 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
 
     private async Task ToggleSFX()
     {
-        // Stop any overlapping UI sounds
         try
         {
-            await SoundService.StopSFX("ui-click.wav");
-            await Task.Delay(50);
+            // Play click sound first before toggling
+            await SoundService.PlaySFX("ui-click.wav", false, 0.5f);
+
+            sfxEnabled = !sfxEnabled;
+
+            if (sfxEnabled)
+            {
+                await SoundService.UnmuteSFX();
+            }
+            else
+            {
+                await SoundService.MuteSFX();
+            }
+
+            StateHasChanged();
         }
-        catch { }
-        
-        await PlaySoundSafe("ui-click.wav", false, 0.5f);
-        sfxEnabled = !sfxEnabled;
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to toggle SFX: {ex.Message}");
+        }
     }
 
     private async Task PlaySoundSafe(string soundFile, bool loop = false, float volume = 1.0f)
     {
-        if (!sfxEnabled) return;
-
+        // Sound system now handles muting internally, no need to check here
         try
         {
-            // If this is a typing sound and one is already playing, stop the previous one
-            if (soundFile.Contains("typing"))
-            {
-                await SoundService.StopSFX("typing-soft.wav");
-                await Task.Delay(50); // Brief delay for cleanup
-            }
-
             await SoundService.PlaySFX(soundFile, loop, volume);
         }
         catch (Exception ex)
@@ -3075,7 +3079,7 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
                 StateHasChanged();
 
                 // Play typing sound every few characters, but with overlap prevention
-                if (sfxEnabled && soundCounter++ % 5 == 0) // Reduced frequency to prevent overlap
+                if (soundCounter++ % 5 == 0) // Reduced frequency to prevent overlap
                 {
                     _ = PlaySoundSafe("typing-soft.wav", false, 0.08f); // Reduced volume
                 }
@@ -3355,7 +3359,7 @@ The 33% failure rate claimed its victims. A.R.I.A.'s consciousness, her dreams o
             StateHasChanged();
 
             // Less frequent typing sounds and lower volume for endings
-            if (sfxEnabled && soundCounter++ % 8 == 0) 
+            if (soundCounter++ % 8 == 0)
             {
                 _ = PlaySoundSafe("typing-soft.wav", false, 0.03f); // Much lower volume
             }
