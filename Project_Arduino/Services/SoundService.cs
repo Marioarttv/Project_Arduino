@@ -42,11 +42,6 @@ namespace Project_Arduino.Services
                     await _soundModule.InvokeVoidAsync("initializeSoundSystem");
                     _isInitialized = true;
                 }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit is disconnected, can't initialize
-                    _isInitialized = false;
-                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Failed to initialize sound system: {ex.Message}");
@@ -65,10 +60,6 @@ namespace Project_Arduino.Services
                     await _soundModule.InvokeVoidAsync("playBackgroundMusic", fileName, loop, volume);
                 }
             }
-            catch (JSDisconnectedException)
-            {
-                // Circuit disconnected - can't play music
-            }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error playing background music: {ex.Message}");
@@ -85,10 +76,6 @@ namespace Project_Arduino.Services
                     await _soundModule.InvokeVoidAsync("playSFX", fileName, loop, volume);
                 }
             }
-            catch (JSDisconnectedException)
-            {
-                // Circuit disconnected - can't play SFX
-            }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error playing SFX: {ex.Message}");
@@ -102,10 +89,6 @@ namespace Project_Arduino.Services
                 try
                 {
                     await _soundModule.InvokeVoidAsync("stopBackgroundMusic");
-                }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't stop music
                 }
                 catch (Exception ex)
                 {
@@ -122,10 +105,6 @@ namespace Project_Arduino.Services
                 {
                     await _soundModule.InvokeVoidAsync("stopSFX", fileName);
                 }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't stop SFX
-                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error stopping SFX: {ex.Message}");
@@ -140,10 +119,6 @@ namespace Project_Arduino.Services
                 try
                 {
                     await _soundModule.InvokeVoidAsync("stopAllSounds");
-                }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't stop sounds
                 }
                 catch (Exception ex)
                 {
@@ -160,10 +135,6 @@ namespace Project_Arduino.Services
                 {
                     await _soundModule.InvokeVoidAsync("setBackgroundMusicVolume", volume);
                 }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't set volume
-                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error setting background music volume: {ex.Message}");
@@ -178,10 +149,6 @@ namespace Project_Arduino.Services
                 try
                 {
                     await _soundModule.InvokeVoidAsync("setSFXVolume", volume);
-                }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't set volume
                 }
                 catch (Exception ex)
                 {
@@ -198,10 +165,6 @@ namespace Project_Arduino.Services
                 {
                     await _soundModule.InvokeVoidAsync("pauseBackgroundMusic");
                 }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't pause music
-                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error pausing background music: {ex.Message}");
@@ -216,10 +179,6 @@ namespace Project_Arduino.Services
                 try
                 {
                     await _soundModule.InvokeVoidAsync("resumeBackgroundMusic");
-                }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't resume music
                 }
                 catch (Exception ex)
                 {
@@ -236,10 +195,6 @@ namespace Project_Arduino.Services
                 {
                     await _soundModule.InvokeVoidAsync("muteBackgroundMusic");
                 }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't mute music
-                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error muting background music: {ex.Message}");
@@ -254,10 +209,6 @@ namespace Project_Arduino.Services
                 try
                 {
                     await _soundModule.InvokeVoidAsync("unmuteBackgroundMusic");
-                }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't unmute music
                 }
                 catch (Exception ex)
                 {
@@ -274,10 +225,6 @@ namespace Project_Arduino.Services
                 {
                     await _soundModule.InvokeVoidAsync("muteSFX");
                 }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't mute SFX
-                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error muting SFX: {ex.Message}");
@@ -293,10 +240,6 @@ namespace Project_Arduino.Services
                 {
                     await _soundModule.InvokeVoidAsync("unmuteSFX");
                 }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - can't unmute SFX
-                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error unmuting SFX: {ex.Message}");
@@ -311,11 +254,6 @@ namespace Project_Arduino.Services
                 try
                 {
                     return await _soundModule.InvokeAsync<bool>("isBackgroundMusicMuted");
-                }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - assume not muted
-                    return false;
                 }
                 catch (Exception ex)
                 {
@@ -334,11 +272,6 @@ namespace Project_Arduino.Services
                 {
                     return await _soundModule.InvokeAsync<bool>("isSFXMuted");
                 }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit disconnected - assume not muted
-                    return false;
-                }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error checking SFX mute status: {ex.Message}");
@@ -356,14 +289,8 @@ namespace Project_Arduino.Services
                 {
                     await _soundModule.InvokeVoidAsync("cleanup");
                 }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit is disconnected, so we can't make JS calls
-                    // This is expected when the circuit is being disposed
-                }
                 catch (Exception ex)
                 {
-                    // Log other unexpected exceptions if needed
                     Console.WriteLine($"Error during sound system cleanup: {ex.Message}");
                 }
 
